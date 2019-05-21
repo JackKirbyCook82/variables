@@ -21,12 +21,13 @@ __license__ = ""
 
 _DIR = os.path.dirname(os.path.realpath(__file__))
 _GEOFORMATS = {'all':'{key}={allchar}', 'each':'{key}={name}({value})'}
+_GEOFILENAME = 'geography.csv'
 _DELIMITER = ', '
 _ALLCHAR = '*'
 
-with open(os.path.join(_DIR, 'geography.csv'), mode='r') as infile:
+with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
     reader = csv.reader(infile)    
-    _GEOLENGTHS = {row[0] : int(row[1]) for row in reader}
+    _GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
     _GEOGRAPHYS = {row[0] for row in reader}
 
 
@@ -63,16 +64,6 @@ class Geography(object):
         elif isinstance(key, int): return self.__class__(**{self.getkey(key):{'id':self.getvalue(key), 'name':self.getname(key)}})
         elif isinstance(key, slice): return self.__class__(**{geokey:{'id':geovalue, 'name':self.__names.get(geokey, None)} for geokey, geovalue in self.__items[key].items()})
         else: raise TypeError(type(key))
-    
-    @classmethod
-    def fromstr(cls, geostr):
-        getkey = lambda x: x.split('=')[0]
-        getvalue = lambda x: _ALLCHAR if _ALLCHAR in x else x[x.find("(")+1:x.find(")")]
-        getname = lambda x: _ALLCHAR if _ALLCHAR in x else x[x.find("=")+1:x.find("(")]
-        
-        items = SODict([(getkey(string), getvalue(string)) for string in geostr.split(_DELIMITER)])
-        names = {getkey(string):getname(string) for string in geostr.split(_DELIMITER)}
-        return cls(**{key:{'id':str(item), 'name':name} for key, item, name in zip(items.keys(), items.values(), names.values())})
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__): raise TypeError(type(other))
