@@ -20,20 +20,25 @@ __license__ = ""
 
 
 _DIR = os.path.dirname(os.path.realpath(__file__))
-_GEOFORMATS = {'all':'{key}={allchar}', 'each':'{key}={name}({value})'}
 _GEOFILENAME = 'geography.csv'
-_DELIMITER = ', '
 _ALLCHAR = '*'
+_DELIMITER = ' & '
+_ALLID = 'X'
 
 with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
     reader = csv.reader(infile)    
     _GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
-    _GEOGRAPHYS = {row[0] for row in reader}
 
+_geotype = lambda value: 'all' if value == _ALLCHAR else 'each'
+_geoformats = {'all': lambda kwargs: '{key}={allchar}',
+               'each': lambda kwargs: '{key}={name}|{value}' if kwargs['name'] else '{key}={value}'}
+_geonum = lambda kwargs: _GEOLENGTHS[kwargs['key']] * _ALLID if _geotype(kwargs['value']) == 'all' else str(kwargs['value']).zfill(_GEOLENGTHS[kwargs['key']])
+_geoformat = lambda kwargs: _geoformats[_geotype(kwargs['value'])](kwargs).format(**kwargs, allchar=_ALLCHAR)
+ 
 
 class Geography(object): 
     def __init__(self, **items): 
-        self.__items = SODict([(key, str(value['id'])) if isinstance(value, (dict, ODict, SODict)) else (key, str(value)) for key, value in items.items()])
+        self.__items = SODict([(key, str(value['value'])) if isinstance(value, (dict, ODict, SODict)) else (key, str(value)) for key, value in items.items()])
         names = {key:value.get('name', None) for key, value in items.items() if isinstance(value, (dict, ODict, SODict))}
         names = {key:value for key, value in names.items() if value}
         self.__setnames(names)   
@@ -48,14 +53,13 @@ class Geography(object):
     def getkey(self, index): return self.keys()[index]    
     def getvalue(self, index): return self.values()[index]  
     def getname(self, index): return self.names()[index]
-        
-    def geonum(self, key, value): return _GEOLENGTHS[key] * 'X' if value == _ALLCHAR else str(value).zfill(_GEOLENGTHS[key])
-    def geoformat(self, key, value, name): return _GEOFORMATS['all' if value == _ALLCHAR else 'each'].format(key=key, value=self.geonum(key, value), name=name, allchar=_ALLCHAR)
     
     @property
-    def geoid(self): return ''.join([self.geonum(key, value) for key, value in zip(self.keys(), self.values())])
-    def __str__(self): return self.delimiter.join([self.geoformat(key, value, name) for key, value, name in self.items()])
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, {key:({'id':value, 'name':name} if name else value) for key, value, name in self.items()})
+    def geoid(self): return ''.join([_geonum(dict(key=key, value=value)) for key, value in zip(self.keys(), self.values())])
+    def __str__(self): return _DELIMITER.join([_geoformat(dict(key=key, value=value, name=name)) for key, value, name in self.items()])
+    def __repr__(self): 
+        string = lambda kwargs: str({key:value for key, value in kwargs.items() if value})
+        return '{}({})'.format(self.__class__.__name__, ', '.join([key + '=' + string(dict(value=value, name=name)) for key, value, name in self.items()]))
     
     def withnames(self, names): return self.__class__(**{key:{'id':value, 'name':names.get(key, None)} for key, value in zip(self.keys(), self.values())})
     
@@ -73,7 +77,16 @@ class Geography(object):
 
 
 
-
+if __name__ == '__main__':
+    test = Geography(**dict(state={'value':48, 'name':'TX'}, county={'value':157, 'name':'FortBend'}, subdivision={'value':'*'}))
+    print(str(test))
+    print(test.geoid)
+    print(repr(test))
+    
+    test = Geography(**dict(state=48, county=157, subdivision='*'))
+    print(str(test))
+    print(test.geoid)
+    print(repr(test))
 
 
 
