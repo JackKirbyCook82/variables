@@ -30,13 +30,21 @@ with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
     _GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
 
 _geotype = lambda value: 'all' if value == _ALLCHAR else 'each'
+
 _geoformats = {'all': lambda kwargs: '{key}={allchar}',
                'each': lambda kwargs: '{key}={name}|{value}' if kwargs['name'] else '{key}={value}'}
 _geonum = lambda kwargs: _GEOLENGTHS[kwargs['key']] * _ALLID if _geotype(kwargs['value']) == 'all' else str(kwargs['value']).zfill(_GEOLENGTHS[kwargs['key']])
 _geoformat = lambda kwargs: _geoformats[_geotype(kwargs['value'])](kwargs).format(**kwargs, allchar=_ALLCHAR)
- 
+
+_geounformats = lambda item, string: {'key': string.split('=')[0],
+                                      'value': string.split('=')[-1].split('|')[1] if '|' in string.split('=')[-1] else string.split('=')[-1],
+                                      'name': string.split('=')[-1].split('|')[0] if '|' in string.split('=')[-1] else None}[item]  
+_geounformat = lambda string: tuple([_geounformats('key', string), {item:_geounformats(item, string) for item in ('value', 'name')}])
+
 
 class Geography(object): 
+    delimiter = _DELIMITER
+    
     def __init__(self, **items): 
         self.__items = SODict([(key, str(value['value'])) if isinstance(value, (dict, ODict, SODict)) else (key, str(value)) for key, value in items.items()])
         names = {key:value.get('name', None) for key, value in items.items() if isinstance(value, (dict, ODict, SODict))}
@@ -56,7 +64,7 @@ class Geography(object):
     
     @property
     def geoid(self): return ''.join([_geonum(dict(key=key, value=value)) for key, value in zip(self.keys(), self.values())])
-    def __str__(self): return _DELIMITER.join([_geoformat(dict(key=key, value=value, name=name)) for key, value, name in self.items()])
+    def __str__(self): return self.delimiter.join([_geoformat(dict(key=key, value=value, name=name)) for key, value, name in self.items()])
     def __repr__(self): 
         string = lambda kwargs: str({key:value for key, value in kwargs.items() if value})
         return '{}({})'.format(self.__class__.__name__, ', '.join([key + '=' + string(dict(value=value, name=name)) for key, value, name in self.items()]))
@@ -74,19 +82,9 @@ class Geography(object):
         return all([self.keys() == other.keys(), self.values() == other.values()])
     def __ne__(self, other): return not self.__eq__(other)  
 
-
-
-
-if __name__ == '__main__':
-    test = Geography(**dict(state={'value':48, 'name':'TX'}, county={'value':157, 'name':'FortBend'}, subdivision={'value':'*'}))
-    print(str(test))
-    print(test.geoid)
-    print(repr(test))
-    
-    test = Geography(**dict(state=48, county=157, subdivision='*'))
-    print(str(test))
-    print(test.geoid)
-    print(repr(test))
-
+    @classmethod
+    def fromstr(cls, geostr, **kwargs):
+        items = ODict([_geounformat(item) for item in geostr.split(cls.delimiter)])
+        return cls(**items)
 
 

@@ -56,13 +56,3 @@ class Date(DateBase, date):
         return super().__new__(cls, int(year), int(month), int(day))
     
 
-
-
-if __name__ == '__main__':
-    test = Datetime(year=2017, month=2, day=15)
-    print(str(test))
-    print(repr(test))
-
-
-
- 
