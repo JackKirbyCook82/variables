@@ -45,6 +45,11 @@ _geounformat = lambda string: tuple([_geounformats('key', string), {item:_geounf
 class Geography(object): 
     delimiter = _DELIMITER
     
+    @property
+    def name(self): return self.__class__.__name__
+    @property
+    def variabletype(self): return self.__class__.__name__.lower()
+    
     def __init__(self, **items): 
         self.__items = SODict([(key, str(value['value'])) if isinstance(value, (dict, ODict, SODict)) else (key, str(value)) for key, value in items.items()])
         names = {key:value.get('name', None) for key, value in items.items() if isinstance(value, (dict, ODict, SODict))}

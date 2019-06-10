@@ -22,6 +22,11 @@ _DATEFORMATS = {'date':'%Y-%m-%d', 'datetime':'%Y-%m-%d %H:%M:%S'}
     
 
 class DateBase(ABC):
+    @property
+    def name(self): return self.__class__.__name__
+    @property
+    def variabletype(self): return self.__class__.__name__.lower()
+    
     @classmethod
     def dateattrs(cls): return _DATEATTRS[cls.datetype()]
     @classmethod
