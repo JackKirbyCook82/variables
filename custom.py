@@ -17,6 +17,9 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
+CUSTOM_VARIABLES = {}
+
+
 def sametype(function):
     def wrapper(self, other, *args, **kwargs):
         if self.variabletype != other.variabletype: raise TypeError(' != '.join([self.name, other.name]))
@@ -38,11 +41,15 @@ class VariableOperationNotSupportedError(Exception):
 class VariableNotCreatedError(Exception): pass
 
 
-# DEEPCOPY ? ##
-#def create_customvariable(spec):
-#    variable = CustomVariable.subclasses()[spec.datatype]
-#    variable.spec = spec
-#    return variable    
+def create_customvariable(spec):
+    try: return CUSTOM_VARIABLES[spec.jsonstr()]
+    except: 
+        variabletype = spec.datatype        
+        base = CustomVariable.subclasses()[variabletype]
+        name = '_'.join([uppercase(spec.data, index=0, withops=True), base.__name__])
+        attrs = dict(spec=spec)
+        newvariable = type(name, (base,), attrs)
+        return newvariable    
 
 
 class CustomVariable(ABC):
@@ -59,7 +66,7 @@ class CustomVariable(ABC):
     def variabletype(self): pass
     
     @property
-    def name(self): return '_'.join([uppercase(self.spec.data, index=0, withops=True), self.__class__.__name__])
+    def name(self): return self.__class__.__name__
     
     def __init__(self, value):
         self.spec.checkval(value)

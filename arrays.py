@@ -8,12 +8,11 @@ Created on Thurs Jun 6 2019
 
 from functools import update_wrapper, reduce
 
-from variables.nums import Num, Range
-from variables.types import Category
+from variables import Num, Range, Category
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['cumulate', 'consolidate', 'summation']
+__all__ = ['apply_tovarray', 'cumulate', 'consolidate', 'summation']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -46,6 +45,11 @@ def variable_dispatcher(mainfunc):
     wrapper.registry = registry
     update_wrapper(wrapper, mainfunc)
     return wrapper
+
+
+# FACTORY
+def apply_tovarray(varray, function, *args, **kwargs):
+    pass
 
 
 # BROADCASTING
