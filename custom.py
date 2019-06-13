@@ -7,12 +7,13 @@ Created on Sun Jun 9 2019
 """
 
 from abc import ABC, abstractmethod
+from functools import update_wrapper
 
 from utilities.strings import uppercase
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['create_customvariable', 'CustomVariable', 'VariableOverlapError', 'VariableOperationError', 'VariableOperationNotSupportedError']
+__all__ = ['CustomVariable', 'VariableOverlapError', 'VariableOperationError', 'VariableOperationNotSupportedError']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -38,23 +39,39 @@ class VariableOperationError(Exception):
 class VariableOperationNotSupportedError(Exception): 
     def __init__(self, spec, operation): super().__init__('{}.{}()'.format(repr(spec), operation))
 
-class VariableNotCreatedError(Exception): pass
+class VariableNotCreatedError(Exception): pass  
 
 
 def create_customvariable(spec):
-    try: return CUSTOM_VARIABLES[spec.jsonstr()]
+    try: return CUSTOM_VARIABLES[spec.jsonstr]
     except: 
         variabletype = spec.datatype        
         base = CustomVariable.subclasses()[variabletype]
         name = '_'.join([uppercase(spec.data, index=0, withops=True), base.__name__])
-        attrs = dict(spec=spec)
+        attrs = {'__spec':spec}
         newvariable = type(name, (base,), attrs)
-        return newvariable    
+        CUSTOM_VARIABLES[spec.jsonstr] = newvariable
+        return newvariable  
+
+def operation(function):
+    def wrapper(self, other, *args, **kwargs):
+        cls = create_customvariable(getattr(self.spec, function.__name__)(other.spec, *args, **kwargs))
+        return cls(function(self, other, *args, **kwargs))
+    update_wrapper(wrapper, function)
+    return wrapper
+
+def transformation(function):
+    def wrapper(self, *args, **kwargs):
+        cls = create_customvariable(getattr(self.spec, function.__name__)(*args, **kwargs))
+        return cls(function(self, *args, **kwargs))
+    update_wrapper(wrapper, function)
+    return wrapper
 
 
 class CustomVariable(ABC):
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
+        assert hasattr(cls, '__spec')
         cls.add, cls.subtract = sametype(cls.add), sametype(cls.subtract)
         cls.multiply, cls.divide = sametype(cls.multiply), sametype(cls.divide)
         return super().__new__(cls)
@@ -67,6 +84,10 @@ class CustomVariable(ABC):
     
     @property
     def name(self): return self.__class__.__name__
+    @property
+    def spec(self): return self.__spec
+    @property
+    def value(self): return self.__value
     
     def __init__(self, value):
         self.spec.checkval(value)
@@ -75,8 +96,6 @@ class CustomVariable(ABC):
     @classmethod
     def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
     
-    @property
-    def value(self): return self.__value
     def __str__(self): return self.spec.asstr(self.__value)   
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)
 
