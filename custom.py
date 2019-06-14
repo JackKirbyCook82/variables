@@ -48,30 +48,34 @@ def create_customvariable(spec):
         variabletype = spec.datatype        
         base = CustomVariable.subclasses()[variabletype]
         name = '_'.join([uppercase(spec.data, index=0, withops=True), base.__name__])
-        attrs = {'__spec':spec}
+        attrs = {'spec':spec}
         newvariable = type(name, (base,), attrs)
         CUSTOM_VARIABLES[spec.jsonstr] = newvariable
         return newvariable  
 
-def operation(function):
-    def wrapper(self, other, *args, **kwargs):
-        cls = create_customvariable(getattr(self.spec, function.__name__)(other.spec, *args, **kwargs))
-        return cls(function(self, other, *args, **kwargs))
-    update_wrapper(wrapper, function)
-    return wrapper
+def operation(*func_args, **func_kwargs):
+    def decorator(function):
+        def wrapper(self, other, *args, **kwargs):
+            cls = create_customvariable(getattr(self.spec, function.__name__)(other.spec, *func_args, **func_kwargs))
+            return cls(function(self, other, *args, **kwargs))
+        update_wrapper(wrapper, function)
+        return wrapper
+    return decorator
 
-def transformation(function):
-    def wrapper(self, *args, **kwargs):
-        cls = create_customvariable(getattr(self.spec, function.__name__)(*args, **kwargs))
-        return cls(function(self, *args, **kwargs))
-    update_wrapper(wrapper, function)
-    return wrapper
+def transformation(*func_args, **func_kwargs):
+    def decorator(function):
+        def wrapper(self, *args, **kwargs):
+            cls = create_customvariable(getattr(self.spec, function.__name__)(*func_args, **func_kwargs))
+            return cls(function(self, *args, **kwargs))
+        update_wrapper(wrapper, function)
+        return wrapper
+    return decorator
 
 
 class CustomVariable(ABC):
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
-        assert hasattr(cls, '__spec')
+        assert hasattr(cls, 'spec')
         cls.add, cls.subtract = sametype(cls.add), sametype(cls.subtract)
         cls.multiply, cls.divide = sametype(cls.multiply), sametype(cls.divide)
         return super().__new__(cls)
@@ -84,8 +88,6 @@ class CustomVariable(ABC):
     
     @property
     def name(self): return self.__class__.__name__
-    @property
-    def spec(self): return self.__spec
     @property
     def value(self): return self.__value
     
