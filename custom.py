@@ -1,31 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Jun 9 2019
-@name:   Custom Variables
+@name:   Custom Variable Objects
 @author: Jack Kirby Cook
 
 """
 
-from abc import ABC, abstractmethod
-from functools import update_wrapper
-
-from utilities.strings import uppercase
+from variables.variable import CustomVariable, custom_operation, custom_transformation
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['CustomVariable', 'VariableOverlapError', 'VariableOperationError', 'VariableOperationNotSupportedError']
+__all__ = []
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
-
-
-CUSTOM_VARIABLES = {}
-
-
-def sametype(function):
-    def wrapper(self, other, *args, **kwargs):
-        if self.variabletype != other.variabletype: raise TypeError(' != '.join([self.name, other.name]))
-        return function(self, other, *args, **kwargs)
-    return wrapper
 
 
 class VariableOverlapError(Exception):
@@ -36,95 +23,77 @@ class VariableOperationError(Exception):
     def __init__(self, instance, operation):
         super().__init__('{}.{}()'.format(repr(instance), operation))    
 
-class VariableOperationNotSupportedError(Exception): 
-    def __init__(self, spec, operation): super().__init__('{}.{}()'.format(repr(spec), operation))
 
-class VariableNotCreatedError(Exception): pass  
-
-
-def create_customvariable(spec):
-    try: return CUSTOM_VARIABLES[spec.jsonstr]
-    except: 
-        variabletype = spec.datatype        
-        base = CustomVariable.subclasses()[variabletype]
-        name = '_'.join([uppercase(spec.data, index=0, withops=True), base.__name__])
-        attrs = {'spec':spec}
-        newvariable = type(name, (base,), attrs)
-        CUSTOM_VARIABLES[spec.jsonstr] = newvariable
-        return newvariable  
-
-def operation(*func_args, **func_kwargs):
-    def decorator(function):
-        def wrapper(self, other, *args, **kwargs):
-            cls = create_customvariable(getattr(self.spec, function.__name__)(other.spec, *func_args, **func_kwargs))
-            return cls(function(self, other, *args, **kwargs))
-        update_wrapper(wrapper, function)
-        return wrapper
-    return decorator
-
-def transformation(*func_args, **func_kwargs):
-    def decorator(function):
-        def wrapper(self, *args, **kwargs):
-            cls = create_customvariable(getattr(self.spec, function.__name__)(*func_args, **func_kwargs))
-            return cls(function(self, *args, **kwargs))
-        update_wrapper(wrapper, function)
-        return wrapper
-    return decorator
-
-
-class CustomVariable(ABC):
-    def __new__(cls, *args, **kwargs):
-        if cls == CustomVariable: raise VariableNotCreatedError()
-        assert hasattr(cls, 'spec')
-        cls.add, cls.subtract = sametype(cls.add), sametype(cls.subtract)
-        cls.multiply, cls.divide = sametype(cls.multiply), sametype(cls.divide)
-        return super().__new__(cls)
-   
-    @classmethod
-    def subclasses(cls): return {subclass.variabletype:subclass for subclass in CustomVariable.__subclasses__()}
+@CustomVariable.register('category')
+class Category:
+    @custom_operation('add')
+    def add(self, other, *args, **kwargs): 
+        if any([item in self.values for item in other.values]): raise VariableOverlapError(self, other, 'add')
+        return {*self.value, *other.value} 
+    @custom_operation('subtract')
+    def subtract(self, other, *args, **kwargs): 
+        if any([item not in self.values for item in other.values]): raise VariableOverlapError(self, other, 'sub')
+        return {value for value in self.values if value not in other.values}
     
-    @abstractmethod
-    def variabletype(self): pass
+
+@CustomVariable.register('num')
+class Num(CustomVariable):
+    @custom_operation('add')
+    def add(self, other, *args, **kwargs): return self.value + other.value    
+    @custom_operation('subtract')
+    def subtract(self, other, *args, **kwargs): return self.value - other.value
+    @custom_operation('multiply')
+    def multiply(self, other, *args, **kwargs): return self.value * other.value  
+    @custom_operation('divide')
+    def divide(self, other, *args, **kwargs): return self.value / other.value
+
     
+@CustomVariable.register('range')
+class Range(CustomVariable):  
     @property
-    def name(self): return self.__class__.__name__
+    def lower(self): return self.value[0]
     @property
-    def value(self): return self.__value
+    def upper(self): return self.value[-1]
     
-    def __init__(self, value):
-        self.spec.checkval(value)
-        self.__value = value
-        
-    @classmethod
-    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
-    
-    def __str__(self): return self.spec.asstr(self.__value)   
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)
+    @custom_operation('add')
+    def add(self, other, *args, **kwargs):
+        if all([self.lower == other.upper, self.lower is not None, other.upper is not None]): value = [other.lower, self.upper]
+        elif all([self.upper == other.lower, self.upper is not None, other.lower is not None]): value = [self.lower, other.upper]
+        else: raise VariableOverlapError(self, other, 'add')
+        return value
 
-    # EQUALITY
-    @sametype
-    def __eq__(self, other): return self.value == other.value
-    def __ne__(self, other): return not self.__eq__(other)
+    @custom_operation('subtract')
+    def subtract(self, other, *args, **kwargs):
+        if other.lower == other.upper: raise VariableOverlapError(self, other, 'sub')
+        if self.lower == other.lower: 
+            if other.upper is None: raise VariableOverlapError(self, other, 'sub')
+            else: 
+                if other.upper > self.upper: raise VariableOverlapError(self, other, 'sub')
+                else: value = [other.upper, self.upper]
+        elif self.upper == other.upper: 
+            if other.lower is None: raise VariableOverlapError(self, other, 'sub')
+            else: 
+                if other.lower < self.lower: raise VariableOverlapError(self, other, 'sub')
+                else: value = [self.lower, other.lower]
+        else: raise VariableOverlapError(self, other, 'sub')
+        return value
 
-    # OPERATIONS       
-    def __add__(self, other): return self.add(other)
-    def __sub__(self, other): return self.subtract(other)
-    def __mul__(self, other): return self.multiply(other)
-    def __truediv__(self, other): return self.divide(other)
-    
-    def add(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, 'add')  
-    def subtract(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, 'subtract') 
-    def multiply(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, 'multiply')
-    def divide(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, 'divide')
-    
-    
+    @custom_transformation('consolidate', 'average')
+    def average(self, *args, wieght=0.5, **kwargs): 
+        assert all([wieght >= 0, wieght <= 1]) 
+        if self.spec.direction(self.value) != 'center' or self.spec.direction(self.value) != 'state': raise VariableOperationError(self, 'average')
+        value = wieght * self.lower + (1-wieght) * self.upper
+        return value
 
-    
-    
-    
-    
-    
-    
+    @custom_transformation('consolidate', 'cumulate')
+    def cumulate(self, *args, **kwargs):
+        if self.spec.direction(self.value) == 'lower': value = self.upper
+        elif self.spec.direction(self.value) == 'upper': value = self.lower
+        else: raise VariableOperationError(self, 'cumulative')
+        return value
+
+
+
     
     
     
