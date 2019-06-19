@@ -94,4 +94,3 @@ class Geography(Variable):
         items = ODict([_geounformat(item) for item in geostr.split(cls.delimiter)])
         return cls(**items)
 
-

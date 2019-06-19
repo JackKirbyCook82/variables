@@ -7,13 +7,12 @@ Created on Sun Jun 9 2019
 """
 
 from abc import ABC, abstractmethod
-from functools import update_wrapper
 
 from utilities.strings import uppercase
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variable', 'CustomVariable', 'custom_operation', 'custom_transformation', 'create_customvariable']
+__all__ = ['Variable', 'CustomVariable', 'create_customvariable', 'VariableOperationNotSupportedError', 'VariableTransformationNotSupportedError']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -33,6 +32,11 @@ def create_customvariable(spec):
 
 
 class VariableNotCreatedError(Exception): pass  
+
+class VariableOperationNotSupportedError(Exception): 
+    def __init__(self, variable, other, operation): super().__init__('{}.{}({})'.format(repr(variable), operation, repr(other)))
+class VariableTransformationNotSupportedError(Exception):
+    def __init__(self, variable, transformation, method): super().__init__('{}.{}(method={})'.format(repr(variable), transformation, method))   
        
 
 class Variable(ABC):
@@ -51,18 +55,16 @@ class Variable(ABC):
     @property
     def name(self): return self.__class__.__name__
    
+    def __add__(self, other): return self.add(other)
+    def __sub__(self, other): return self.subtract(other)
+    def __mul__(self, other): return self.multiply(other)
+    def __truediv__(self, other): return self.divide(other)    
+    
+    # EQUALITY
     def __eq__(self, other): 
         if self.datatype != other.datatype: raise TypeError('{} != {}'.format(type(self), type(other)))
         return self.value == other.value
     def __ne__(self, other): return not self.__eq__(other)
-
-    def __add__(self, other): return self.add(other)
-    def __sub__(self, other): return self.subtract(other)
-    def __mul__(self, other): return self.multiply(other)
-    def __truediv__(self, other): return self.divide(other)
-    
-    def transformation(self, method, *args, **kwargs): return getattr(self, method)(*args, **kwargs)
-    def operation(self, method, other, *args, **kwargs): return getattr(self, method)(other, *args, **kwargs)  
 
     # REGISTER SUBCLASSES  
     __subclasses = {}      
@@ -77,28 +79,15 @@ class Variable(ABC):
             newsubclass = type(name, bases, dict(datatype=datatype))
             Variable.__subclasses[datatype] = newsubclass
             return newsubclass
-        return wrapper  
+        return wrapper 
 
+    # OPERATIONS
+    def add(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'add')
+    def subtract(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'subtract')
+    def multiply(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'multiply')
+    def divide(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'divide')
 
-def custom_operation(*func_args, **func_kwargs):
-    def decorator(function):
-        def wrapper(self, other, *args, **kwargs):
-            cls = create_customvariable(getattr(self.spec, function.__name__)(other.spec, *func_args, **func_kwargs))
-            return cls(function(self, other, *args, **kwargs))
-        update_wrapper(wrapper, function)
-        return wrapper
-    return decorator
-
-def custom_transformation(*func_args, **func_kwargs):
-    def decorator(function):
-        def wrapper(self, *args, **kwargs):
-            cls = create_customvariable(getattr(self.spec, function.__name__)(*func_args, **func_kwargs))
-            return cls(function(self, *args, **kwargs))
-        update_wrapper(wrapper, function)
-        return wrapper
-    return decorator
-
-
+ 
 class CustomVariable(Variable):
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
@@ -132,7 +121,17 @@ class CustomVariable(Variable):
             return newsubclass
         return wrapper  
     
+    # OPERATIONS
+    @classmethod
+    def operation(cls, method, other, *args, **kwargs):        
+        try: return create_customvariable(getattr(cls.spec, method)(other.spec, *args, **kwargs))
+        except AttributeError: raise VariableOperationNotSupportedError 
     
+    # TRANSFORMATIONS
+    @classmethod
+    def transformation(cls, method, *args, **kwargs): 
+        try: return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+        except AttributeError: raise VariableTransformationNotSupportedError
     
     
     

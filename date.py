@@ -48,6 +48,7 @@ class Datetime:
     def fromstr(cls, datestr, **kwargs): return cls.frominstance(datetime.strptime(datestr, kwargs.get('dateformat', _DATEFORMATS[cls.datatype])))  
     
 
+
 @Variable.register('date')
 class Date:
     def __init__(self, *args, year, month=1, day=1, **kwargs): 
@@ -68,7 +69,6 @@ class Date:
     @classmethod
     def fromstr(cls, datestr, **kwargs): return cls.frominstance(datetime.strptime(datestr, kwargs.get('dateformat', _DATEFORMATS[cls.datatype])))  
     
-
 
 
 
