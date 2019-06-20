@@ -12,7 +12,7 @@ from utilities.strings import uppercase
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variable', 'CustomVariable', 'create_customvariable', 'VariableOperationNotSupportedError', 'VariableTransformationNotSupportedError']
+__all__ = ['Variable', 'CustomVariable', 'create_customvariable']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -31,13 +31,8 @@ def create_customvariable(spec):
         return newvariable  
 
 
-class VariableNotCreatedError(Exception): pass  
+class VariableNotCreatedError(Exception): pass     
 
-class VariableOperationNotSupportedError(Exception): 
-    def __init__(self, variable, other, operation): super().__init__('{}.{}({})'.format(repr(variable), operation, repr(other)))
-class VariableTransformationNotSupportedError(Exception):
-    def __init__(self, variable, transformation, method): super().__init__('{}.{}(method={})'.format(repr(variable), transformation, method))   
-       
 
 class Variable(ABC):
     @abstractmethod
@@ -62,9 +57,14 @@ class Variable(ABC):
     
     # EQUALITY
     def __eq__(self, other): 
-        if self.datatype != other.datatype: raise TypeError('{} != {}'.format(type(self), type(other)))
+        if self.spec != other.spec: raise TypeError('{} != {}'.format(type(self), type(other)))
         return self.value == other.value
     def __ne__(self, other): return not self.__eq__(other)
+    
+    def __lt__(self, other): return self.value < other.value
+    def __le__(self, other): return self.value <= other.value
+    def __ge__(self, other): return self.value >= other.value
+    def __gt__(self, other): return self.value > other.value
 
     # REGISTER SUBCLASSES  
     __subclasses = {}      
@@ -80,12 +80,6 @@ class Variable(ABC):
             Variable.__subclasses[datatype] = newsubclass
             return newsubclass
         return wrapper 
-
-    # OPERATIONS
-    def add(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'add')
-    def subtract(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'subtract')
-    def multiply(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'multiply')
-    def divide(self, other, *args, **kwargs): raise VariableOperationNotSupportedError(self, other, 'divide')
 
  
 class CustomVariable(Variable):
@@ -123,15 +117,21 @@ class CustomVariable(Variable):
     
     # OPERATIONS
     @classmethod
-    def operation(cls, method, other, *args, **kwargs):        
-        try: return create_customvariable(getattr(cls.spec, method)(other.spec, *args, **kwargs))
-        except AttributeError: raise VariableOperationNotSupportedError 
-    
-    # TRANSFORMATIONS
+    def added(cls, other, *args, **kwargs): return create_customvariable(cls.spec.add(other.spec, *args, **kwargs))
     @classmethod
-    def transformation(cls, method, *args, **kwargs): 
-        try: return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
-        except AttributeError: raise VariableTransformationNotSupportedError
+    def subtracted(cls, other, *args, **kwargs): return create_customvariable(cls.spec.subtract(other.spec, *args, **kwargs))
+    @classmethod
+    def multiplied(cls, other, *args, **kwargs): return create_customvariable(cls.spec.multiply(other.spec, *args, **kwargs))
+    @classmethod
+    def divided(cls, other, *args, **kwargs): return create_customvariable(cls.spec.divide(other.spec, *args, **kwargs))
+
+    
+    
+    
+    
+    
+    
+    
     
     
     
