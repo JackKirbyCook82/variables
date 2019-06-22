@@ -10,21 +10,26 @@ from functools import reduce
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['apply_tovarray', 'cumulate', 'consolidate', 'summation']
+__all__ = ['varray_fromvalues', 'apply_tovarray', 'cumulate', 'consolidate', 'summation']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
 # FACTORY
+def varray_fromvalues(values, *args, variable, **kwargs): 
+    return [variable(value) for value in values]
+
+
+# APPLY PROTOCOL
 def apply_tovarray(varray, function, *args, **kwargs):
     return function(varray, *args, **kwargs)
 
 
 # BROADCASTING
-def cumulate(varray, *args, direction='upper', **kwargs): 
+def cumulate(varray, *args, direction='lower', **kwargs): 
     function = lambda x: [summation(x[slice(0, i+1)], *args, **kwargs) for i in range(len(varray))]
-    if direction == 'upper': return function(varray)
-    elif direction == 'lower': return function(varray[::-1])[::-1]
+    if direction == 'lower': return function(varray)
+    elif direction == 'upper': return function(varray[::-1])[::-1]
     else: raise TypeError(direction)
 
 def consolidate(varray, *args, method, **kwargs): 

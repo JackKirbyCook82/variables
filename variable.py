@@ -47,8 +47,8 @@ class Variable(ABC):
     @property
     def value(self): return self.__value
     def __init__(self, value): self.__value = value
-    @property
-    def name(self): return self.__class__.__name__
+    @classmethod
+    def name(cls): return cls.__name__ + '_Variable'
    
     def __add__(self, other): return self.add(other)
     def __sub__(self, other): return self.subtract(other)
@@ -125,7 +125,9 @@ class CustomVariable(Variable):
     @classmethod
     def divided(cls, other, *args, **kwargs): return create_customvariable(cls.spec.divide(other.spec, *args, **kwargs))
 
-    
+    # TRANSFORMATIONS
+    @classmethod
+    def modify(cls, *args, mod, **kwargs): return create_customvariable(cls.spec.modify(*args, mod=mod, **kwargs))    
     
     
     

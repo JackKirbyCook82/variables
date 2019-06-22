@@ -71,6 +71,7 @@ class Geography(Variable):
     
     @property
     def geoid(self): return ''.join([_geonum(dict(key=key, value=value)) for key, value in zip(self.keys(), self.values())])
+    def __len__(self): return len(self.value['geocodes'])
     def __str__(self): return self.delimiter.join([_geoformat(dict(key=key, value=value, name=name)) for key, value, name in self.items()])
     def __repr__(self): 
         string = lambda kwargs: str({key:value for key, value in kwargs.items() if value})

@@ -8,18 +8,19 @@ Created on Fri Jun 7 2019
 
 import os.path
 import pandas as pd
+import json
 
 import utilities.dataframes as dfs
 from specs import Spec
 
-from variables.variable import create_customvariable, Variable, CustomVariable
+from variables.variable import Variable, CustomVariable, create_customvariable 
+from variables.date import Date, Datetime
+from variables.geography import Geography
 from variables.custom import *
-from variables.date import *
-from variables.geography import *
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variables']
+__all__ = ['Variables', 'Geography', 'Date', 'Datetime']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -39,6 +40,8 @@ def antiparser(item, concatby):
 
 
 class Variables(dict):
+    def __str__(self): return json.dumps({key:value.name() for key, value in self.items()}, sort_keys=False, indent=3, separators=(',', ' : '))
+    
     @classmethod
     def fromfile(cls, file, splitchar=';'):
         if not os.path.isfile(file): raise FileNotFoundError(file)
@@ -58,22 +61,11 @@ class Variables(dict):
         dataframe = dfs.dataframe_parser(dataframe, default=lambda item: antiparser(item, concatchar))
         dataframe.reset_index(drop=False, inplace=True)
         dfs.dataframe_tofile(file, dataframe, index=False, header=True)
-        
-    @property
-    def variable_registry(self): return Variable.subclasses()
-    @property
-    def customvariable_registry(self): return CustomVariable.subclasses()
-    @property
-    def customvariable_createdregistry(self): return CustomVariable.custom_subclasses()
-            
-            
-        
-        
-        
-        
-        
-        
-        
+    
+    def registry(self, key):
+        return {'variables':Variable.subclasses(), 'customvariables':CustomVariable.subclasses(), 'created':CustomVariable.custom_subclasses()}[key]
+     
+
         
         
         

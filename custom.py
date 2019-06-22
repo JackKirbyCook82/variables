@@ -10,7 +10,7 @@ from variables.variable import CustomVariable, create_customvariable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = []
+__all__ = ['Category', 'Num', 'Range']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -33,7 +33,7 @@ class Category:
         
 
 @CustomVariable.register('num')
-class Num(CustomVariable):   
+class Num:   
     # OPERATIONS
     def add(self, other, *args, **kwargs): return self.added(other.__class__, other, *args, **kwargs)(self.value + other.value)   
     def subtract(self, other, *args, **kwargs): return self.subtracted(other.__class__, other, *args, **kwargs)(self.value - other.value)
@@ -48,15 +48,11 @@ class Num(CustomVariable):
 
     # TRANSFORMATIONS
     @classmethod
-    def normalized(cls, *args, **kwargs): return create_customvariable(cls.spec.normalize(*args, **kwargs))
-    @classmethod
-    def standardized(cls, *args, **kwargs): return create_customvariable(cls.spec.standardize(*args, **kwargs))
-    @classmethod
-    def minmaxed(cls, *args, **kwargs): return create_customvariable(cls.spec.minmax(*args, **kwargs))
+    def scale(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
 
 
 @CustomVariable.register('range')
-class Range(CustomVariable):  
+class Range:  
     @property
     def lower(self): return self.value[0]
     @property
@@ -89,20 +85,16 @@ class Range(CustomVariable):
         assert isinstance(weight, (float, int))
         assert all([weight <=1, weight >=0])
         value = weight * self.lower + (1-weight) * self.upper
-        return self.averaged(*args, weight=weight, **kwargs)(value)
+        return self.consolidate(*args, weight=weight, method='average', **kwargs)(value)
     
-    def cumulate(self, *args, **kwargs):
-        direction = self.spec.direction(self.value)
+    def cumulate(self, *args, direction, **kwargs):
+        assert direction == self.spec.direction(self.value)
         assert direction == 'lower' or direction == 'upper'
         value = [x for x in self.value if x is not None][0]
-        return self.cumulated(*args, direction=direction, **kwargs)(value)
+        return self.consolidate(*args, direction=direction, method='cumulate', **kwargs)(value)
     
     @classmethod
-    def averaged(cls, *args, **kwargs): return create_customvariable(cls.spec.average(*args, **kwargs))
-    @classmethod
-    def cumulated(cls, *args, **kwargs): return create_customvariable(cls.spec.cumulate(*args, **kwargs))
-
-    
+    def consolidate(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
     
     
     
