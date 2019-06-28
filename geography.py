@@ -22,23 +22,20 @@ __license__ = ""
 
 _DIR = os.path.dirname(os.path.realpath(__file__))
 _GEOFILENAME = 'geography.csv'
-_ALLCHAR = '*'
-_DELIMITER = ' & '
-_ALLID = 'X'
-
 
 with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
     reader = csv.reader(infile)    
     _GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
 
 
-_geotype = lambda value: 'all' if value == _ALLCHAR else 'each'
-_geonum = lambda kwargs: _GEOLENGTHS[kwargs['key']] * _ALLID if _geotype(kwargs['value']) == 'all' else str(kwargs['value']).zfill(_GEOLENGTHS[kwargs['key']])
-
-
 @Variable.register('geography')
 class Geography: 
-    delimiter = _DELIMITER
+    delimiter = ' & '
+    allChar = '*'
+    allID = 'X'
+    
+    def __geotype(self, value): return 'all' if value == self.allChar else 'each'
+    def __geonum(self, key, value): return _GEOLENGTHS[key] * self.allID if self.__geotype(value) == 'all' else str(value).zfill(_GEOLENGTHS[key])
 
     def __init__(self, value): super().__init__(SODict([(k, v) for k, v in value.items()]))
     def keys(self): return list(self.value.keys())
@@ -52,12 +49,13 @@ class Geography:
         else: raise TypeError(index)
     
     @property
-    def geoid(self): return ''.join([_geonum(dict(key=key, value=value)) for key, value in zip(self.keys(), self.values())])
+    def geoid(self): return ''.join([self.__geonum(key, value) for key, value in zip(self.keys(), self.values())])
 
     def __len__(self): return len(self.value)
     def __str__(self): return self.delimiter.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
 
+    def get(self, key, default): return self.value.get(key, default)   
     def __getitem__(self, key):
         if isinstance(key, str): return self.__class__({key:self.value[key]})
         elif isinstance(key, int): return self.__class__({self.getkey(key):self.getvalue(key)})
