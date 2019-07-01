@@ -6,6 +6,9 @@ Created on Sun Jun 9 2019
 
 """
 
+from numbers import Number
+import numpy as np
+
 from variables.variable import CustomVariable, create_customvariable
 
 __version__ = "1.0.0"
@@ -39,17 +42,26 @@ class Num:
     def subtract(self, other, *args, **kwargs): return self.subtracted(other.__class__, other, *args, **kwargs)(self.value - other.value)
     
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, (int, float)): return self.__class__(self.value * other)    
-        else: return self.multiplied(other.__class__, other, *args, **kwargs)(self.value * other.value  )
+        if isinstance(other, Number): return self.__class__(self.value * other)    
+        else: return self.multiplied(other.__class__, other, *args, **kwargs)(self.value * other.value)
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, (int, float)): return self.__class__(self.value * other)    
-        else: return self.divided(other.__class__, other, *args, **kwargs)(self.value / other.value  )
+        if isinstance(other, Number): return self.__class__(self.value * other)    
+        else: return self.divided(other.__class__, other, *args, **kwargs)(self.value / other.value)
 
     # TRANSFORMATIONS
+    def group(self, *args, groups, shift='upper', **kwargs):
+        shifts = {'lower':False, 'upper':True}
+        ranges = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]
+        indexes = np.digitize([self.value], groups, right=shifts[shift])
+        value = [ranges[index] for index in indexes][0]
+        return self.unconsolidate(*args, method='group', **kwargs)(value)
+    
     @classmethod
     def scale(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
-
+    @classmethod
+    def unconsolidate(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+    
 
 @CustomVariable.register('range')
 class Range:  
@@ -80,17 +92,24 @@ class Range:
         else: raise VariableOverlapError(self, other, 'sub')
         return self.subtracted(other.__class__, other, *args, **kwargs)(value)
 
+    def multiply(self, other, *args, **kwargs): 
+        if isinstance(other, Number): return self.__class__(self.value * other)    
+        else: return self.multiplied(other.__class__, other, *args, **kwargs)([val * other.value for val in self.value])
+    
+    def divide(self, other, *args, **kwargs): 
+        if isinstance(other, Number): return self.__class__(self.value * other)    
+        else: return self.divided(other.__class__, other, *args, **kwargs)([val / other.value for val in self.value])
+
     # TRANSFORMATIONS
     def average(self, *args, weight=0.5, **kwargs):
-        assert isinstance(weight, (float, int))
+        assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
         value = weight * self.lower + (1-weight) * self.upper
         return self.consolidate(*args, weight=weight, method='average', **kwargs)(value)
     
     def cumulate(self, *args, direction, **kwargs):
-        assert direction == self.spec.direction(self.value)
         assert direction == 'lower' or direction == 'upper'
-        value = [x for x in self.value if x is not None][0]
+        value = getattr(self, {'lower':'upper', 'lower':'upper'}[direction])
         return self.consolidate(*args, direction=direction, method='cumulate', **kwargs)(value)
     
     @classmethod
