@@ -3,7 +3,6 @@
 Created on Sun Jun 9 2019
 @name:   Custom Variable Objects
 @author: Jack Kirby Cook
-
 """
 
 from numbers import Number
@@ -50,11 +49,10 @@ class Num:
         else: return self.divided(other.__class__, other, *args, **kwargs)(self.value / other.value)
 
     # TRANSFORMATIONS
-    def group(self, *args, groups, shift='upper', **kwargs):
-        shifts = {'lower':False, 'upper':True}
+    def group(self, *args, groups, right=True, **kwargs):
         ranges = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]
-        indexes = np.digitize([self.value], groups, right=shifts[shift])
-        value = [ranges[index] for index in indexes][0]
+        index = np.digitize([self.value], groups, right=right)[0]
+        value = ranges[index]
         return self.unconsolidate(*args, method='group', **kwargs)(value)
     
     @classmethod
@@ -112,8 +110,26 @@ class Range:
         value = getattr(self, {'lower':'upper', 'lower':'upper'}[direction])
         return self.consolidate(*args, direction=direction, method='cumulate', **kwargs)(value)
     
+    def boundary(self, *args, boundarys, **kwargs):
+        self.spec.checkval(boundarys)
+        assert None not in boundarys
+        value = [bound if val is None else val for val, bound in zip(self.value, boundarys)]
+        return self.__class__(value)
+    
     @classmethod
     def consolidate(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

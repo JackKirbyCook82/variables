@@ -96,7 +96,7 @@ class CustomVariable(Variable):
     def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))    
     
     def __str__(self): return self.spec.asstr(self.value)  
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)     
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)   
     
     # REGISTER SUBCLASSES  
     __subclasses = {}      

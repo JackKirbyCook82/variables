@@ -32,6 +32,7 @@ def average(varray, *args, weights=None, **kwargs):
    
 
 # BROADCASTING
+def boundary(varray, *args, boundarys, **kwargs): return [item.boundary(*args, boundarys=boundarys, **kwargs) for item in varray]
 def consolidate(varray, *args, method, **kwargs): return [getattr(item, method)(*args, **kwargs) for item in varray]    
 def cumulate(varray, *args, direction='lower', **kwargs): 
     function = lambda x: [summation(x[slice(0, i+1)], *args, **kwargs) for i in range(len(varray))]
