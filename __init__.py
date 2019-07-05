@@ -62,9 +62,14 @@ class Variables(dict):
         dataframe.reset_index(drop=False, inplace=True)
         dfs.dataframe_tofile(file, dataframe, index=False, header=True)
     
-    def registry(self, key):
-        return {'variables':Variable.subclasses(), 'customvariables':CustomVariable.subclasses(), 'created':CustomVariable.custom_subclasses()}[key]
-     
+    @property
+    def stardard_variables(self): return CustomVariable.subclasses()
+    @property
+    def custom_variables(self): return Variable.subclasses()
+    @property
+    def created_variables(self): return CustomVariable.custom_subclasses()
+    
+
 
         
         

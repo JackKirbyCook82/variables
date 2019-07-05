@@ -49,6 +49,8 @@ class Variable(ABC):
     def __init__(self, value): self.__value = value
     @classmethod
     def name(cls): return cls.__name__ + '_Variable'
+    @classmethod
+    def data(cls): return cls.spec.data
    
     def __add__(self, other): return self.add(other)
     def __sub__(self, other): return self.subtract(other)
@@ -117,17 +119,15 @@ class CustomVariable(Variable):
     
     # OPERATIONS
     @classmethod
-    def added(cls, other, *args, **kwargs): return create_customvariable(cls.spec.add(other.spec, *args, **kwargs))
-    @classmethod
-    def subtracted(cls, other, *args, **kwargs): return create_customvariable(cls.spec.subtract(other.spec, *args, **kwargs))
-    @classmethod
-    def multiplied(cls, other, *args, **kwargs): return create_customvariable(cls.spec.multiply(other.spec, *args, **kwargs))
-    @classmethod
-    def divided(cls, other, *args, **kwargs): return create_customvariable(cls.spec.divide(other.spec, *args, **kwargs))
+    def operation(cls, other, *args, method, **kwargs): 
+        try: return create_customvariable(getattr(cls.spec, method)(other.spec, *args, **kwargs))
+        except: return create_customvariable(cls.spec.operation(other.spec, *args, method=method, **kwargs))
 
     # TRANSFORMATIONS
     @classmethod
-    def modify(cls, *args, mod, **kwargs): return create_customvariable(cls.spec.modify(*args, mod=mod, **kwargs))    
+    def transformation(cls, *args, method, **kwargs): 
+        try: return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+        except: return create_customvariable(cls.spec.transformation(*args, method=method, **kwargs))    
     
     
     

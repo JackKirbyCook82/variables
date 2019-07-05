@@ -27,26 +27,26 @@ class Category:
     # OPERATIONS
     def add(self, other, *args, **kwargs): 
         if any([item in self.values for item in other.values]): raise VariableOverlapError(self, other, 'add')
-        return self.added(other.__class__, *args, **kwargs)({*self.value, *other.value}) 
+        return self.operation(other.__class__, *args, method='add', **kwargs)({*self.value, *other.value}) 
 
     def subtract(self, other, *args, **kwargs): 
         if any([item not in self.values for item in other.values]): raise VariableOverlapError(self, other, 'sub')
-        return self.subtracted(other.__class__, *args, **kwargs)({value for value in self.values if value not in other.values})
+        return self.operation(other.__class__, *args, method='subtract', **kwargs)({value for value in self.values if value not in other.values})
         
 
 @CustomVariable.register('num')
 class Num:   
     # OPERATIONS
-    def add(self, other, *args, **kwargs): return self.added(other.__class__, other, *args, **kwargs)(self.value + other.value)   
-    def subtract(self, other, *args, **kwargs): return self.subtracted(other.__class__, other, *args, **kwargs)(self.value - other.value)
+    def add(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='add', **kwargs)(self.value + other.value)   
+    def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
     
     def multiply(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.__class__(self.value * other)    
-        else: return self.multiplied(other.__class__, other, *args, **kwargs)(self.value * other.value)
+        else: return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
     
     def divide(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.__class__(self.value * other)    
-        else: return self.divided(other.__class__, other, *args, **kwargs)(self.value / other.value)
+        else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
 
     # TRANSFORMATIONS
     def group(self, *args, groups, right=True, **kwargs):
@@ -73,7 +73,7 @@ class Range:
         if all([self.lower == other.upper, self.lower is not None, other.upper is not None]): value = [other.lower, self.upper]
         elif all([self.upper == other.lower, self.upper is not None, other.lower is not None]): value = [self.lower, other.upper]
         else: raise VariableOverlapError(self, other, 'add')
-        return self.added(other.__class__, other, *args, **kwargs)(value)
+        return self.operation(other.__class__, *args, method='add', **kwargs)(value)
 
     def subtract(self, other, *args, **kwargs):
         if other.lower == other.upper: raise VariableOverlapError(self, other, 'sub')
@@ -88,15 +88,15 @@ class Range:
                 if other.lower < self.lower: raise VariableOverlapError(self, other, 'sub')
                 else: value = [self.lower, other.lower]
         else: raise VariableOverlapError(self, other, 'sub')
-        return self.subtracted(other.__class__, other, *args, **kwargs)(value)
+        return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.__class__(self.value * other)    
-        else: return self.multiplied(other.__class__, other, *args, **kwargs)([val * other.value for val in self.value])
+        else: return self.operation(other.__class__, *args, method='multiply', **kwargs)([val * other.value for val in self.value])
     
     def divide(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.__class__(self.value * other)    
-        else: return self.divided(other.__class__, other, *args, **kwargs)([val / other.value for val in self.value])
+        else: return self.operation(other.__class__, *args, method='divide', **kwargs)([val / other.value for val in self.value])
 
     # TRANSFORMATIONS
     def average(self, *args, weight=0.5, **kwargs):
