@@ -43,10 +43,10 @@ class Variables(dict):
     def __str__(self): return json.dumps({key:value.name() for key, value in self.items()}, sort_keys=False, indent=3, separators=(',', ' : '))
     
     @classmethod
-    def fromfile(cls, file, splitchar=';'):
+    def fromfile(cls, file, parserchar=';'):
         if not os.path.isfile(file): raise FileNotFoundError(file)
         dataframe = dfs.dataframe_fromfile(file)
-        dataframe = dfs.dataframe_parser(dataframe, default=lambda item: parser(item, splitchar))
+        dataframe = dfs.dataframe_parser(dataframe, default=lambda item: parser(item, parserchar))
         dataframe.set_index(_INDEXKEY, drop=True, inplace=True)
         specdata = {key:{item:value for item, value in values.items() if not _allnull(_aslist(value))} for key, values in dataframe.transpose().to_dict().items() if not _allnull(_aslist(values))}
         specs = {key:Spec(**values) for key, values in specdata.items()}
@@ -54,11 +54,11 @@ class Variables(dict):
         variables = {key:value for key, value in Variable.subclasses().items()}
         return cls(**custom_variables, **variables)
         
-    def tofile(self, file, concatchar=';'):
+    def tofile(self, file, antiparserchar=';'):
         specdata = {key:value.spec.todict() for key, value in self.items() if key not in Variable.subclasses().keys()}
         dataframe = pd.DataFrame(specdata).transpose()
         dataframe.index.name = _INDEXKEY
-        dataframe = dfs.dataframe_parser(dataframe, default=lambda item: antiparser(item, concatchar))
+        dataframe = dfs.dataframe_parser(dataframe, default=lambda item: antiparser(item, antiparserchar))
         dataframe.reset_index(drop=False, inplace=True)
         dfs.dataframe_tofile(file, dataframe, index=False, header=True)
     
