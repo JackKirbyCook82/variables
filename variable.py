@@ -12,7 +12,7 @@ from utilities.strings import uppercase
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variable', 'CustomVariable', 'create_customvariable']
+__all__ = ['Variable', 'CustomVariable', 'create_customvariable', 'samevariable']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -29,6 +29,16 @@ def create_customvariable(spec):
         newvariable = type(name, (base,), attrs)
         CUSTOM_VARIABLES[spec.jsonstr] = newvariable
         return newvariable  
+
+
+def samevariable(function):
+    def wrapper(self, other, *args, **kwargs):
+        try: 
+            if self.spec != other.spec: raise TypeError('{} != {}'.format(type(self), type(other)))    
+        except AttributeError: 
+            if type(self) != type(other): raise TypeError('{} != {}'.format(type(self), type(other)))    
+        return function(self, other, *args, **kwargs)
+    return wrapper
 
 
 class VariableNotCreatedError(Exception): pass     
@@ -58,14 +68,17 @@ class Variable(ABC):
     def __truediv__(self, other): return self.divide(other)    
     
     # EQUALITY
-    def __eq__(self, other): 
-        if self.spec != other.spec: raise TypeError('{} != {}'.format(type(self), type(other)))
-        return self.value == other.value
+    @samevariable
+    def __eq__(self, other): return self.value == other.value
     def __ne__(self, other): return not self.__eq__(other)
     
+    @samevariable
     def __lt__(self, other): return self.value < other.value
+    @samevariable
     def __le__(self, other): return self.value <= other.value
+    @samevariable
     def __ge__(self, other): return self.value >= other.value
+    @samevariable
     def __gt__(self, other): return self.value > other.value
 
     # REGISTER SUBCLASSES  

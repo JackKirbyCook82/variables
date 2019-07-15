@@ -67,7 +67,20 @@ class Geography:
         return all([self.keys() == other.keys(), self.values() == other.values()])
     def __ne__(self, other): return not self.__eq__(other)  
 
+    def __lt__(self, other): return self.geoid < other.geoid
+    def __le__(self, other): return self.geoid <= other.geoid
+    def __ge__(self, other): return self.geoid >= other.geoid
+    def __gt__(self, other): return self.geoid > other.geoid
+
     @classmethod
     def fromstr(cls, geostr, **kwargs):
         return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(cls.delimiter)]))
+
+
+
+
+
+
+
+
 

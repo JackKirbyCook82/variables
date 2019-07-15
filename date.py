@@ -19,7 +19,7 @@ __license__ = ""
 
 
 _DATEATTRS = {'date':('year', 'month', 'day'), 'datetime':('year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond')}
-_DATEFORMATS = {'date':'%Y-%m-%d', 'datetime':'%Y-%m-%d %H:%M:%S'}
+_DATEFORMATS = {'date':'%Y-%m-%d', 'datetime':'%Y-%m-%d %H:%M:%S.%f'}
 
 
 @Variable.register('datetime')
@@ -43,11 +43,19 @@ class Datetime:
     def setformat(self, dateformat): self.__dateformat = dateformat
     
     @classmethod
-    def frominstance(cls, instance): return cls(**{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype]})    
+    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype]}, **kwargs)    
     @classmethod
-    def fromstr(cls, datestr, **kwargs): return cls.frominstance(datetime.strptime(datestr, kwargs.get('dateformat', _DATEFORMATS[cls.datatype])))  
+    def fromstr(cls, datestr, **kwargs): 
+        datefmt = kwargs.get('dateformat', _DATEFORMATS[cls.datatype])
+        if '.' in datefmt:
+            try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)  
+            except ValueError: datefmt = datefmt.rpartition('.')[0]   
+        while '-' in datefmt:
+            try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)   
+            except ValueError: datefmt = datefmt.rpartition('-')[0]  
+        try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)    
+        except: raise ValueError(datestr)      
     
-
 
 @Variable.register('date')
 class Date:
@@ -65,10 +73,19 @@ class Date:
     def setformat(self, dateformat): self.__dateformat = dateformat
     
     @classmethod
-    def frominstance(cls, instance): return cls(**{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype]})    
+    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype]}, **kwargs)    
     @classmethod
-    def fromstr(cls, datestr, **kwargs): return cls.frominstance(datetime.strptime(datestr, kwargs.get('dateformat', _DATEFORMATS[cls.datatype])))  
+    def fromstr(cls, datestr, **kwargs): 
+        datefmt = kwargs.get('dateformat', _DATEFORMATS[cls.datatype])
+        while '-' in datefmt:
+            try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)   
+            except ValueError: datefmt = datefmt.rpartition('-')[0]       
+        try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)    
+        except: raise ValueError(datestr)    
     
+    
+    
+
 
 
 

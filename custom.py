@@ -8,7 +8,7 @@ Created on Sun Jun 9 2019
 from numbers import Number
 import numpy as np
 
-from variables.variable import CustomVariable, create_customvariable
+from variables.variable import CustomVariable, create_customvariable, samevariable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
@@ -67,6 +67,15 @@ class Range:
     def lower(self): return self.value[0]
     @property
     def upper(self): return self.value[-1]
+    
+    @samevariable
+    def __lt__(self, other): 
+        try: return self.value[0] < other.value[0]
+        except TypeError: return self.value[0] is None and other.value[0] is not None
+    @samevariable
+    def __gt__(self, other): 
+        try: return self.value[-1] > other.value[-1]
+        except TypeError: return self.value[-1] is None and other.value[-1] is not None
     
     # OPERATIONS
     def add(self, other, *args, **kwargs):
