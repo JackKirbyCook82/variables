@@ -20,6 +20,13 @@ def varray_fromvalues(data, *args, variable, **kwargs):
     return [variable(value) for value in data]
 
 
+# SUPPORT
+def varray_datatype(varray): 
+    datatypes = list(set([item.datatype for item in varray]))
+    assert len(datatypes) == 1
+    return datatypes[0]
+
+
 # REDUCTIONS
 def summation(varray, *args, **kwargs): return reduce(lambda x, y: x.add(y, *args, **kwargs), varray)
 def mean(varray, *args, **kwargs): return reduce(lambda x, y: x.add(y, *args, **kwargs), varray) / len(varray)
@@ -34,8 +41,13 @@ def average(varray, *args, weights=None, **kwargs):
 # BROADCASTING
 def boundary(varray, *args, boundarys, **kwargs): return [item.boundary(*args, boundarys=boundarys, **kwargs) for item in varray]
 def consolidate(varray, *args, method, **kwargs): return [getattr(item, method)(*args, **kwargs) for item in varray]    
-def cumulate(varray, *args, direction='lower', **kwargs): 
-    function = lambda x: [summation(x[slice(0, i+1)], *args, **kwargs) for i in range(len(varray))]
+
+def cumulate(varray, *args, direction, **kwargs): 
+    datatype = varray_datatype(varray)    
+    if datatype == 'range': function = lambda x: [summation(x[slice(0, i+1)], *args, **kwargs) for i in range(len(varray))]
+    elif datatype == 'num': function = lambda x: [x.cumulate(*args, direction=direction, **kwargs) for item in x]
+    else: raise TypeError(datatype)
+    
     if direction == 'lower': return function(varray)
     elif direction == 'upper': return function(varray[::-1])[::-1]
     else: raise TypeError(direction)

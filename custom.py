@@ -8,7 +8,7 @@ Created on Sun Jun 9 2019
 from numbers import Number
 import numpy as np
 
-from variables.variable import CustomVariable, create_customvariable, samevariable
+from variables.variable import CustomVariable, samevariable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
@@ -55,47 +55,52 @@ class Num:
         value = ranges[index]
         return self.unconsolidate(*args, method='group', **kwargs)(value)
     
+    def cumulate(self, *args, direction, **kwargs):
+        assert direction == 'lower' or direction == 'upper'
+        value = self.value
+        return self.transformation(*args, method='cumulate', direction=direction, **kwargs)(value)    
+    
     @classmethod
-    def scale(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+    def scale(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
     @classmethod
-    def unconsolidate(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+    def unconsolidate(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
     
 
 @CustomVariable.register('range')
 class Range:  
     @property
-    def lower(self): return self.value[0]
+    def leftvalue(self): return self.value[0]
     @property
-    def upper(self): return self.value[-1]
+    def rightvalue(self): return self.value[-1]
     
     @samevariable
     def __lt__(self, other): 
-        try: return self.value[0] < other.value[0]
-        except TypeError: return self.value[0] is None and other.value[0] is not None
+        try: return self.leftvalue < other.leftvalue
+        except TypeError: return self.leftvalue is None and other.leftvalue is not None
     @samevariable
     def __gt__(self, other): 
-        try: return self.value[-1] > other.value[-1]
-        except TypeError: return self.value[-1] is None and other.value[-1] is not None
+        try: return self.rightvalue > other.rightvalue
+        except TypeError: return self.rightvalue is None and other.rightvalue is not None
     
     # OPERATIONS
     def add(self, other, *args, **kwargs):
-        if all([self.lower == other.upper, self.lower is not None, other.upper is not None]): value = [other.lower, self.upper]
-        elif all([self.upper == other.lower, self.upper is not None, other.lower is not None]): value = [self.lower, other.upper]
+        if all([self.leftvalue == other.rightvalue, self.leftvalue is not None, other.rightvalue is not None]): value = [other.leftvalue, self.rightvalue]
+        elif all([self.rightvalue == other.leftvalue, self.rightvalue is not None, other.leftvalue is not None]): value = [self.leftvalue, other.rightvalue]
         else: raise VariableOverlapError(self, other, 'add')
         return self.operation(other.__class__, *args, method='add', **kwargs)(value)
 
     def subtract(self, other, *args, **kwargs):
-        if other.lower == other.upper: raise VariableOverlapError(self, other, 'sub')
-        if self.lower == other.lower: 
-            if other.upper is None: raise VariableOverlapError(self, other, 'sub')
+        if other.leftvalue == other.rightvalue: raise VariableOverlapError(self, other, 'sub')
+        if self.leftvalue == other.leftvalue: 
+            if other.rightvalue is None: raise VariableOverlapError(self, other, 'sub')
             else: 
-                if other.upper > self.upper: raise VariableOverlapError(self, other, 'sub')
-                else: value = [other.upper, self.upper]
-        elif self.upper == other.upper: 
-            if other.lower is None: raise VariableOverlapError(self, other, 'sub')
+                if other.rightvalue > self.rightvalue: raise VariableOverlapError(self, other, 'sub')
+                else: value = [other.rightvalue, self.rightvalue]
+        elif self.rightvalue == other.rightvalue: 
+            if other.leftvalue is None: raise VariableOverlapError(self, other, 'sub')
             else: 
-                if other.lower < self.lower: raise VariableOverlapError(self, other, 'sub')
-                else: value = [self.lower, other.lower]
+                if other.leftvalue < self.leftvalue: raise VariableOverlapError(self, other, 'sub')
+                else: value = [self.leftvalue, other.leftvalue]
         else: raise VariableOverlapError(self, other, 'sub')
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
@@ -111,13 +116,13 @@ class Range:
     def average(self, *args, weight=0.5, **kwargs):
         assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
-        value = weight * self.lower + (1-weight) * self.upper
+        value = weight * self.leftvalue + (1-weight) * self.rightvalue
         return self.consolidate(*args, weight=weight, method='average', **kwargs)(value)
     
     def cumulate(self, *args, direction, **kwargs):
         assert direction == 'lower' or direction == 'upper'
-        value = getattr(self, {'lower':'upper', 'lower':'upper'}[direction])
-        return self.consolidate(*args, direction=direction, method='cumulate', **kwargs)(value)
+        value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
+        return self.consolidate(*args, method='cumulate', datatype='num',  direction=direction, numdirection=direction, **kwargs)(value)
     
     def boundary(self, *args, boundarys, **kwargs):
         self.spec.checkval(boundarys)
@@ -126,7 +131,7 @@ class Range:
         return self.__class__(value)
     
     @classmethod
-    def consolidate(cls, *args, method, **kwargs): return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
+    def consolidate(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
     
     
     
