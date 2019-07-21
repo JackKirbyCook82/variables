@@ -55,10 +55,11 @@ class Num:
         value = ranges[index]
         return self.unconsolidate(*args, method='group', **kwargs)(value)
     
-    def cumulate(self, *args, direction, **kwargs):
+    def uncumulate(self, *args, direction, **kwargs):
         assert direction == 'lower' or direction == 'upper'
-        value = self.value
-        return self.transformation(*args, method='cumulate', direction=direction, **kwargs)(value)    
+        assert direction == self.numdirection
+        value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
+        return self.unconsolidate(*args, method='uncumulate', direction=direction, **kwargs)(value)
     
     @classmethod
     def scale(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
@@ -117,12 +118,13 @@ class Range:
         assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
         value = weight * self.leftvalue + (1-weight) * self.rightvalue
-        return self.consolidate(*args, weight=weight, method='average', **kwargs)(value)
+        return self.consolidate(*args, method='average', weight=weight, **kwargs)(value)
     
     def cumulate(self, *args, direction, **kwargs):
+        assert direction == self.spec.direction(self.value)
         assert direction == 'lower' or direction == 'upper'
         value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
-        return self.consolidate(*args, method='cumulate', datatype='num',  direction=direction, numdirection=direction, **kwargs)(value)
+        return self.consolidate(*args, method='cumulate', direction=direction, **kwargs)(value)
     
     def boundary(self, *args, boundarys, **kwargs):
         self.spec.checkval(boundarys)
@@ -132,20 +134,7 @@ class Range:
     
     @classmethod
     def consolidate(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     
     

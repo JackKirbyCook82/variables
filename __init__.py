@@ -11,6 +11,7 @@ import pandas as pd
 import json
 
 import utilities.dataframes as dfs
+from utilities.dictionarys import SliceOrderedDict as SODict
 from specs import Spec
 
 from variables.variable import Variable, CustomVariable, create_customvariable 
@@ -39,7 +40,7 @@ def antiparser(item, concatby):
     else: return concatby.join([str(i) for i in item]) if isinstance(item, (set, tuple, list)) else str(item)
 
 
-class Variables(dict):
+class Variables(SODict):
     def __str__(self): return json.dumps({key:value.name() for key, value in self.items()}, sort_keys=False, indent=3, separators=(',', ' : '))
     
     @classmethod
@@ -50,9 +51,9 @@ class Variables(dict):
         dataframe.set_index(_INDEXKEY, drop=True, inplace=True)
         specdata = {key:{item:value for item, value in values.items() if not _allnull(_aslist(value))} for key, values in dataframe.transpose().to_dict().items() if not _allnull(_aslist(values))}
         specs = {key:Spec(**values) for key, values in specdata.items()}
-        custom_variables = {key:create_customvariable(spec) for key, spec in specs.items()}
-        variables = {key:value for key, value in Variable.subclasses().items()}
-        return cls(**custom_variables, **variables)
+        custom_variables = [(key, create_customvariable(spec)) for key, spec in specs.items()]
+        variables = [(key, value) for key, value in Variable.subclasses().items()]
+        return cls(variables + custom_variables)
         
     def tofile(self, file, antiparserchar=';'):
         specdata = {key:value.spec.todict() for key, value in self.items() if key not in Variable.subclasses().keys()}
