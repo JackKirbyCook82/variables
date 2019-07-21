@@ -61,6 +61,13 @@ class Num:
         value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
         return self.unconsolidate(*args, method='uncumulate', direction=direction, **kwargs)(value)
     
+    def torange(self, other, *args, **kwargs):
+        assert isinstance(other, self.__class__)
+        value = [min(self.value, other.value), max(self.value, other.value)]
+        return self.transformation(*args, **kwargs)(value)
+    
+    @classmethod
+    def asrange(cls, *args, **kwargs): return cls.transformation(*args, **kwargs)
     @classmethod
     def scale(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
     @classmethod
@@ -91,18 +98,18 @@ class Range:
         return self.operation(other.__class__, *args, method='add', **kwargs)(value)
 
     def subtract(self, other, *args, **kwargs):
-        if other.leftvalue == other.rightvalue: raise VariableOverlapError(self, other, 'sub')
-        if self.leftvalue == other.leftvalue: 
-            if other.rightvalue is None: raise VariableOverlapError(self, other, 'sub')
-            else: 
-                if other.rightvalue > self.rightvalue: raise VariableOverlapError(self, other, 'sub')
-                else: value = [other.rightvalue, self.rightvalue]
-        elif self.rightvalue == other.rightvalue: 
-            if other.leftvalue is None: raise VariableOverlapError(self, other, 'sub')
-            else: 
-                if other.leftvalue < self.leftvalue: raise VariableOverlapError(self, other, 'sub')
-                else: value = [self.leftvalue, other.leftvalue]
-        else: raise VariableOverlapError(self, other, 'sub')
+        if all([self.value.count(None) == 0, None not in other.value]):
+            if all([self.leftvalue == other.leftvalue, other.rightvalue < self.rightvalue]): value = [other.rightvalue, self.rightvalue]
+            elif all([self.rightvalue == other.rightvalue, other.leftvalue > self.leftvalue]): value = [self.leftvalue, other.leftvalue]
+            else: raise ValueError(self.value)            
+        elif all([self.value.count(None) == 1, other.value.count(None) <= 1]):
+            value = self.value.copy()
+            value[value.index(None)] = [item for item in other.value if item is not None][0]
+        elif all([self.value.count(None) == 2, other.value.count(None) == 1]):
+            if other.leftvalue is None: value = [other.rightvalue, self.rightvalue]
+            elif other.rightvalue is None: value = [self.leftvalue, other.leftvalue]
+            else: raise ValueError(other.value)
+        else: raise VariableOverlapError(self, other, 'subtract')
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
@@ -131,7 +138,7 @@ class Range:
         assert None not in boundarys
         value = [bound if val is None else val for val, bound in zip(self.value, boundarys)]
         return self.__class__(value)
-    
+
     @classmethod
     def consolidate(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
 
