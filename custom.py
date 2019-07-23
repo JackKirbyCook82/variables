@@ -49,29 +49,29 @@ class Num:
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
 
     # TRANSFORMATIONS
-    def group(self, *args, groups, right=True, **kwargs):
-        ranges = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]
-        index = np.digitize([self.value], groups, right=right)[0]
-        value = ranges[index]
-        return self.unconsolidate(*args, method='group', **kwargs)(value)
+    #def group(self, *args, groups, right=True, **kwargs):
+    #    ranges = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]
+    #    index = np.digitize([self.value], groups, right=right)[0]
+    #    value = ranges[index]
+    #    return self.unconsolidate(*args, method='group', **kwargs)(value)
     
     def uncumulate(self, *args, direction, **kwargs):
         assert direction == 'lower' or direction == 'upper'
         assert direction == self.numdirection
         value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
-        return self.unconsolidate(*args, method='uncumulate', direction=direction, **kwargs)(value)
+        return self.unconsolidate(*args, how='uncumulate', direction=direction, axis=None, **kwargs)(value)
     
-    def torange(self, other, *args, **kwargs):
+    def bracket(self, other, *args, **kwargs):
         assert isinstance(other, self.__class__)
         value = [min(self.value, other.value), max(self.value, other.value)]
-        return self.transformation(*args, **kwargs)(value)
-    
+        return self.moving(*args, how='bracket', axis=None, **kwargs)(value)
+       
     @classmethod
-    def asrange(cls, *args, **kwargs): return cls.transformation(*args, **kwargs)
+    def unconsolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='unconsolidate', how=how, **kwargs)    
     @classmethod
-    def scale(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
+    def moving(cls, *args, method, how, **kwargs): return cls.transformation(*args, method='moving', how=how, **kwargs)
     @classmethod
-    def unconsolidate(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
+    def scale(cls, *args, method, how, **kwargs): return cls.transformation(*args, method='scale', how=how, **kwargs)
     
 
 @CustomVariable.register('range')
@@ -121,26 +121,26 @@ class Range:
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)([val / other.value for val in self.value])
 
     # TRANSFORMATIONS
-    def average(self, *args, weight=0.5, **kwargs):
-        assert isinstance(weight, Number)
-        assert all([weight <=1, weight >=0])
-        value = weight * self.leftvalue + (1-weight) * self.rightvalue
-        return self.consolidate(*args, method='average', weight=weight, **kwargs)(value)
-    
-    def cumulate(self, *args, direction, **kwargs):
-        assert direction == self.spec.direction(self.value)
-        assert direction == 'lower' or direction == 'upper'
-        value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
-        return self.consolidate(*args, method='cumulate', direction=direction, **kwargs)(value)
-    
     def boundary(self, *args, boundarys, **kwargs):
         self.spec.checkval(boundarys)
         assert None not in boundarys
         value = [bound if val is None else val for val, bound in zip(self.value, boundarys)]
         return self.__class__(value)
-
+       
+    def average(self, *args, weight=0.5, **kwargs):
+        assert isinstance(weight, Number)
+        assert all([weight <=1, weight >=0])
+        value = weight * self.leftvalue + (1-weight) * self.rightvalue
+        return self.consolidate(*args, how='average', weight=weight, axis=None, **kwargs)(value)
+    
+    def cumulate(self, *args, direction, **kwargs):
+        assert direction == self.spec.direction(self.value)
+        assert direction == 'lower' or direction == 'upper'
+        value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
+        return self.consolidate(*args, how='cumulate', direction=direction, axis=None, **kwargs)(value)
+    
     @classmethod
-    def consolidate(cls, *args, method, **kwargs): return cls.transformation(*args, method=method, **kwargs)
+    def consolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='consolidate', how=how, **kwargs)
 
     
     

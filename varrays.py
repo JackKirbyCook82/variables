@@ -10,7 +10,7 @@ from functools import reduce
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['varray_fromvalues', 'summation', 'mean', 'minimum', 'maximum', 'average', 'boundary', 'consolidate', 'unconsolidate', 'cumulate', 'uncumulate']
+__all__ = []
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -42,8 +42,8 @@ def average(varray, *args, weights=None, **kwargs):
 # BROADCASTING
 def boundary(varray, *args, boundarys, **kwargs): return [item.boundary(*args, boundarys=boundarys, **kwargs) for item in varray]
 
-def consolidate(varray, *args, method, **kwargs): return [getattr(item, method)(*args, **kwargs) for item in varray]   
-def unconsolidate(varray, *args, method, **kwargs): return [getattr(item, method)(*args, **kwargs) for item in varray] 
+def consolidate(varray, *args, method, how, **kwargs): return [getattr(item, method)(*args, how=how, **kwargs) for item in varray]   
+def unconsolidate(varray, *args, method, how, **kwargs): return [getattr(item, method)(*args, how=how, **kwargs) for item in varray] 
 
 
 # ROLLING
@@ -69,10 +69,10 @@ def movingtotal(varray, *args, period, **kwargs):
     assert len(varray) >= period
     return [summation(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
 
-def movingrange(varray, *args, period, **kwargs):
+def movingbracket(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    if varraytype(varray) == 'num': return [varray[i].torange(varray[i+period]) for i in range(range(0, len(varray)-period+1))]
+    if varraytype(varray) == 'num': return [varray[i].bracket(varray[i+period], *args, **kwargs) for i in range(0, len(varray)-period)]
     elif varraytype(varray) == 'range': return movingtotal(varray, *args, period=period, **kwargs)
     else: raise ValueError(varraytype(varray))    
     

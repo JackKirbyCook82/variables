@@ -138,9 +138,9 @@ class CustomVariable(Variable):
 
     # TRANSFORMATIONS
     @classmethod
-    def transformation(cls, *args, method, **kwargs): 
-        try: return create_customvariable(getattr(cls.spec, method)(*args, **kwargs))
-        except AttributeError: return create_customvariable(cls.spec.transformation(*args, method=method, **kwargs))    
+    def transformation(cls, *args, method, how, **kwargs): 
+        try: return create_customvariable(getattr(cls.spec, method)(*args, how=how **kwargs))
+        except AttributeError: return create_customvariable(cls.spec.transformation(*args, method=method, how=how, **kwargs))    
 
     
     
