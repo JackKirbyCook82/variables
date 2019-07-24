@@ -69,9 +69,9 @@ class Num:
     @classmethod
     def unconsolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='unconsolidate', how=how, **kwargs)    
     @classmethod
-    def moving(cls, *args, method, how, **kwargs): return cls.transformation(*args, method='moving', how=how, **kwargs)
+    def moving(cls, *args, how, **kwargs): return cls.transformation(*args, method='moving', how=how, **kwargs)
     @classmethod
-    def scale(cls, *args, method, how, **kwargs): return cls.transformation(*args, method='scale', how=how, **kwargs)
+    def scale(cls, *args, how, **kwargs): return cls.transformation(*args, method='scale', how=how, **kwargs)
     
 
 @CustomVariable.register('range')

@@ -22,7 +22,7 @@ def varray_fromvalues(data, *args, variable, **kwargs):
 
 # SUPPORT
 def varraytype(varray): 
-    varraytypes = list(set([item.datatype for item in varray]))
+    varraytypes = list(set([item.datatype.lower() for item in varray]))
     assert len(varraytypes) == 1
     return varraytypes[0]
 
@@ -42,8 +42,8 @@ def average(varray, *args, weights=None, **kwargs):
 # BROADCASTING
 def boundary(varray, *args, boundarys, **kwargs): return [item.boundary(*args, boundarys=boundarys, **kwargs) for item in varray]
 
-def consolidate(varray, *args, method, how, **kwargs): return [getattr(item, method)(*args, how=how, **kwargs) for item in varray]   
-def unconsolidate(varray, *args, method, how, **kwargs): return [getattr(item, method)(*args, how=how, **kwargs) for item in varray] 
+def consolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
+def unconsolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray] 
 
 
 # ROLLING
@@ -72,7 +72,7 @@ def movingtotal(varray, *args, period, **kwargs):
 def movingbracket(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    if varraytype(varray) == 'num': return [varray[i].bracket(varray[i+period], *args, **kwargs) for i in range(0, len(varray)-period)]
+    if varraytype(varray) == 'num': return [varray[i].bracket(varray[i+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]
     elif varraytype(varray) == 'range': return movingtotal(varray, *args, period=period, **kwargs)
     else: raise ValueError(varraytype(varray))    
     

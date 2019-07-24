@@ -26,11 +26,11 @@ _DATEFORMATS = {'date':'%Y-%m-%d', 'datetime':'%Y-%m-%d %H:%M:%S.%f'}
 class Datetime:  
     def __init__(self, *args, year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0, **kwargs):
         instance = datetime(int(year), int(month), int(day), hour=int(hour), minute=int(minute), second=int(second), microsecond=int(microsecond))
-        self.setformat(kwargs.get('dateformat', _DATEFORMATS[self.datatype]))
+        self.setformat(kwargs.get('dateformat', _DATEFORMATS[self.datatype.lower()]))
         super().__init__(instance)
         
     def __str__(self): return self.strftime(self.dateformat)  
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in _DATEATTRS[self.datatype]])) 
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in _DATEATTRS[self.datatype.lower()]])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
     
     @property
@@ -43,10 +43,10 @@ class Datetime:
     def setformat(self, dateformat): self.__dateformat = dateformat
     
     @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype]}, **kwargs)    
+    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype.lower()]}, **kwargs)    
     @classmethod
     def fromstr(cls, datestr, **kwargs): 
-        datefmt = kwargs.get('dateformat', _DATEFORMATS[cls.datatype])
+        datefmt = kwargs.get('dateformat', _DATEFORMATS[cls.datatype.lower()])
         if '.' in datefmt:
             try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)  
             except ValueError: datefmt = datefmt.rpartition('.')[0]   
@@ -61,11 +61,11 @@ class Datetime:
 class Date:
     def __init__(self, *args, year, month=1, day=1, **kwargs): 
         instance = date(int(year), int(month), int(day))
-        self.setformat(kwargs.get('dateformat', _DATEFORMATS[self.datatype]))
+        self.setformat(kwargs.get('dateformat', _DATEFORMATS[self.datatype.lower()]))
         super().__init__(instance)
     
     def __str__(self): return self.strftime(self.dateformat)  
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in _DATEATTRS[self.datatype]])) 
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in _DATEATTRS[self.datatype.lower()]])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
     
     @property
@@ -73,10 +73,10 @@ class Date:
     def setformat(self, dateformat): self.__dateformat = dateformat
     
     @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype]}, **kwargs)    
+    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype.lower()]}, **kwargs)    
     @classmethod
     def fromstr(cls, datestr, **kwargs): 
-        datefmt = kwargs.get('dateformat', _DATEFORMATS[cls.datatype])
+        datefmt = kwargs.get('dateformat', _DATEFORMATS[cls.datatype.lower()])
         while '-' in datefmt:
             try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)   
             except ValueError: datefmt = datefmt.rpartition('-')[0]       

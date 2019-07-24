@@ -21,10 +21,9 @@ CUSTOM_VARIABLES = {}
 
 def create_customvariable(spec):
     try: return CUSTOM_VARIABLES[spec.jsonstr]
-    except: 
-        datatype = spec.datatype        
-        base = CustomVariable.subclasses()[datatype]
-        name = '_'.join([uppercase(spec.data, index=0, withops=True), base.__name__])
+    except:      
+        base = CustomVariable.getsubclass(spec.datatype)
+        name = '_'.join([uppercase(spec.data), base.__name__])
         attrs = {'spec':spec}
         newvariable = type(name, (base,), attrs)
         CUSTOM_VARIABLES[spec.jsonstr] = newvariable
@@ -46,8 +45,6 @@ class VariableNotCreatedError(Exception): pass
 
 class Variable(ABC):
     @abstractmethod
-    def datatype(self): pass
-    @abstractmethod
     def __str__(self): pass
     @abstractmethod
     def __repr__(self): pass
@@ -58,7 +55,7 @@ class Variable(ABC):
     def value(self): return self.__value
     def __init__(self, value): self.__value = value
     @classmethod
-    def name(cls): return cls.__name__ + '_Variable'
+    def name(cls): return '_'.join([cls.__name__, 'Variable'])
     @classmethod
     def data(cls): return cls.spec.data
    
@@ -82,17 +79,19 @@ class Variable(ABC):
     def __gt__(self, other): return self.value > other.value
 
     # REGISTER SUBCLASSES  
-    __subclasses = {}      
+    __subclasses = {}    
     @classmethod
-    def subclasses(cls): return cls.__subclasses     
+    def subclasses(cls): return cls.__subclasses
+    @classmethod
+    def getsubclass(cls, datatype): return cls.__subclasses[datatype.lower()]     
     
     @classmethod
     def register(cls, datatype):  
         def wrapper(subclass):
             name = subclass.__name__
             bases = (subclass, cls)
-            newsubclass = type(name, bases, dict(datatype=datatype))
-            Variable.__subclasses[datatype] = newsubclass
+            newsubclass = type(name, bases, dict(datatype=uppercase(datatype)))
+            Variable.__subclasses[datatype.lower()] = newsubclass
             return newsubclass
         return wrapper 
 
@@ -118,6 +117,8 @@ class CustomVariable(Variable):
     @classmethod
     def subclasses(cls): return cls.__subclasses  
     @classmethod
+    def getsubclass(cls, datatype): return cls.__subclasses[datatype.lower()]
+    @classmethod
     def custom_subclasses(cls): return list(CUSTOM_VARIABLES.values())
     
     @classmethod
@@ -125,8 +126,8 @@ class CustomVariable(Variable):
         def wrapper(subclass):
             name = subclass.__name__
             bases = (subclass, cls)
-            newsubclass = type(name, bases, dict(datatype=datatype))
-            CustomVariable.__subclasses[datatype] = newsubclass
+            newsubclass = type(name, bases, dict(datatype=uppercase(datatype)))
+            CustomVariable.__subclasses[datatype.lower()] = newsubclass
             return newsubclass
         return wrapper  
     
@@ -139,7 +140,7 @@ class CustomVariable(Variable):
     # TRANSFORMATIONS
     @classmethod
     def transformation(cls, *args, method, how, **kwargs): 
-        try: return create_customvariable(getattr(cls.spec, method)(*args, how=how **kwargs))
+        try: return create_customvariable(getattr(cls.spec, method)(*args, how=how, **kwargs))
         except AttributeError: return create_customvariable(cls.spec.transformation(*args, method=method, how=how, **kwargs))    
 
     
