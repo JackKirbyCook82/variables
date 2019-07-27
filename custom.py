@@ -49,11 +49,11 @@ class Num:
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
 
     # TRANSFORMATIONS
-    #def group(self, *args, groups, right=True, **kwargs):
-    #    ranges = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]
-    #    index = np.digitize([self.value], groups, right=right)[0]
-    #    value = ranges[index]
-    #    return self.unconsolidate(*args, method='group', **kwargs)(value)
+    def group(self, *args, groups, right=True, **kwargs):
+        ranges = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]
+        index = np.digitize([self.value], groups, right=right)[0]
+        value = ranges[index]
+        return self.unconsolidate(*args, how='group', **kwargs)(value)
     
     def uncumulate(self, *args, direction, **kwargs):
         assert direction == 'lower' or direction == 'upper'
