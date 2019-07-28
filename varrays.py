@@ -76,7 +76,10 @@ def movingbracket(varray, *args, period, **kwargs):
     elif varraytype(varray) == 'range': return movingtotal(varray, *args, period=period, **kwargs)
     else: raise ValueError(varraytype(varray))    
     
-    
+def movingdifferential(varray, *args, period, **kwargs):
+    assert isinstance(period, int)
+    assert len(varray) >= period
+    return [varray[i].subtract(varray[i+period], *args, **kwargs) for i in range(0, len(varray)-period)]  
     
     
     
