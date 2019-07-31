@@ -37,7 +37,7 @@ class Geography:
     def __geotype(self, value): return 'all' if value == self.allChar else 'each'
     def __geonum(self, key, value): return _GEOLENGTHS[key] * self.allID if self.__geotype(value) == 'all' else str(value).zfill(_GEOLENGTHS[key])
 
-    def __init__(self, value): super().__init__(SODict([(k, v) for k, v in value.items()]))
+    def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
     def items(self): return zip(self.value.keys(), self.value.values())
@@ -71,6 +71,11 @@ class Geography:
     def __le__(self, other): return self.geoid <= other.geoid
     def __ge__(self, other): return self.geoid >= other.geoid
     def __gt__(self, other): return self.geoid > other.geoid
+
+    def __add__(self, other): return self.add(other)
+    def add(self, other, *args, **kwargs):
+        assert self[:-1] == other[:-1]
+        return self.__class__(SODict([(key, value) if key != self.getkey(-1) else (key, self.allChar) for key, value in self.items()]))
 
     @classmethod
     def fromstr(cls, geostr, **kwargs):

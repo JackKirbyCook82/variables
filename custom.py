@@ -41,11 +41,11 @@ class Num:
     def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
     
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.__class__(self.value * other)    
+        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)    
         else: return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.__class__(self.value * other)    
+        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)    
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
 
     # TRANSFORMATIONS
@@ -72,7 +72,9 @@ class Num:
     def moving(cls, *args, how, **kwargs): return cls.transformation(*args, method='moving', how=how, **kwargs)
     @classmethod
     def scale(cls, *args, how, **kwargs): return cls.transformation(*args, method='scale', how=how, **kwargs)
-    
+    @classmethod
+    def factor(cls, *args, how, **kwargs): return cls.transformation(*args, method='factor', how=how, **kwargs)
+
 
 @CustomVariable.register('range')
 class Range:  
@@ -113,11 +115,11 @@ class Range:
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.__class__(self.value * other)    
+        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)    
         else: return self.operation(other.__class__, *args, method='multiply', **kwargs)([val * other.value for val in self.value])
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.__class__(self.value * other)    
+        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)       
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)([val / other.value for val in self.value])
 
     # TRANSFORMATIONS
@@ -141,7 +143,8 @@ class Range:
     
     @classmethod
     def consolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='consolidate', how=how, **kwargs)
-
+    @classmethod
+    def factor(cls, *args, how, **kwargs): return cls.transformation(*args, method='factor', how=how, **kwargs)
     
     
     
