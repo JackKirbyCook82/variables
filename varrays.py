@@ -40,7 +40,7 @@ def average(varray, *args, weights=None, **kwargs):
    
 
 # BROADCASTING
-def boundary(varray, *args, boundarys, **kwargs): return [item.boundary(*args, boundarys=boundarys, **kwargs) for item in varray]
+def bound(varray, *args, bounds, **kwargs): return [item.bound(*args, bounds=bounds, **kwargs) for item in varray]
 
 def consolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
 def unconsolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray] 

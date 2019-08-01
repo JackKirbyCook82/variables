@@ -123,10 +123,10 @@ class Range:
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)([val / other.value for val in self.value])
 
     # TRANSFORMATIONS
-    def boundary(self, *args, boundarys, **kwargs):
-        self.spec.checkval(boundarys)
-        assert None not in boundarys
-        value = [bound if val is None else val for val, bound in zip(self.value, boundarys)]
+    def bound(self, *args, bounds, **kwargs):
+        self.spec.checkval(bounds)
+        assert None not in bounds
+        value = [bound if val is None else val for val, bound in zip(self.value, bounds)]
         return self.__class__(value)
        
     def average(self, *args, weight=0.5, **kwargs):
