@@ -10,7 +10,8 @@ from functools import reduce
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = []
+__all__ = ['varray_fromvalues', 'summation', 'minimum', 'maximum', 'mean', 'average', 'bound', 'consolidate', 'unconsolidate',
+           'cumulate', 'uncumulate', 'movingaverage', 'movingtotal', 'movingbracket', 'movingdifferential']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
