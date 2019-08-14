@@ -77,15 +77,13 @@ class Geography:
         assert self[:-1] == other[:-1]
         return self.__class__(SODict([(key, value) if key != self.getkey(-1) else (key, self.allChar) for key, value in self.items()]))
 
+    def __contains__(self, other): return other.contains(self)
+    def contains(self, other):
+        assert other.getvalue(-1) == self.allChar
+        return self[:-1] == other[:-1]
+        
     @classmethod
     def fromstr(cls, geostr, **kwargs):
         return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(cls.delimiter)]))
-
-
-
-
-
-
-
 
 
