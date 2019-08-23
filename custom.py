@@ -8,18 +8,13 @@ Created on Sun Jun 9 2019
 from numbers import Number
 import numpy as np
 
-from variables.variable import CustomVariable, samevariable
+from variables.variable import CustomVariable, VariableOverlapError, samevariable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
 __all__ = ['Category', 'Num', 'Range']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
-
-
-class VariableOverlapError(Exception):
-    def __init__(self, instance, other, operation): 
-        super().__init__('{}.{}({})'.format(repr(instance), operation, repr(other))) 
 
 
 @CustomVariable.register('category')

@@ -29,7 +29,6 @@ def create_customvariable(spec):
         CUSTOM_VARIABLES[spec.jsonstr] = newvariable
         return newvariable  
 
-
 def samevariable(function):
     def wrapper(self, other, *args, **kwargs):
         try: 
@@ -41,7 +40,10 @@ def samevariable(function):
 
 
 class VariableNotCreatedError(Exception): pass     
-
+class VariableOverlapError(Exception):
+    def __init__(self, instance, other, operation): 
+        super().__init__('{}.{}({})'.format(repr(instance), operation, repr(other))) 
+        
 
 class Variable(ABC):
     @abstractmethod
