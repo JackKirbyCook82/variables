@@ -30,7 +30,7 @@ with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
 
 @Variable.register('geography')
 class Geography: 
-    delimiter = ' & '
+    delimiter = '|'
     allChar = '*'
     allID = 'X'
     
@@ -85,5 +85,8 @@ class Geography:
     @classmethod
     def fromstr(cls, geostr, **kwargs):
         return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(cls.delimiter)]))
+
+
+
 
 
