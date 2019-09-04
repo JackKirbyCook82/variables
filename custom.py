@@ -136,6 +136,10 @@ class Range:
         value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
         return self.consolidate(*args, how='cumulate', direction=direction, axis=None, **kwargs)(value)
     
+    def differential(self, *args, **kwargs):
+        value = self.rightvalue - self.leftvalue
+        return self.consolidate(*args, how='differential', axis=None, **kwargs)(value)
+    
     @classmethod
     def consolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='consolidate', how=how, **kwargs)
     @classmethod
