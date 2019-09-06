@@ -24,9 +24,8 @@ class Variables(dict):
     def __init__(self, *args, **kwargs):
         argskwargs = [{key:value for key, value in arg.items()} for arg in args]
         for argkwargs in argskwargs: kwargs.update(argkwargs)
-        super().__init__(**kwargs)    
-    
-    def __str__(self): return json.dumps({key:value.name() for key, value in self.items()}, sort_keys=False, indent=3, separators=(',', ' : '))       
+        super().__init__(**kwargs)        
+
     def copy(self): return self.__class__(super().copy())
     
     @classmethod
@@ -35,19 +34,9 @@ class Variables(dict):
         variables = {key:value for key, value in Variable.subclasses().items()}
         return cls(**variables, **custom_variables)  
     
-    @property
-    def stardard_variables(self): return CustomVariable.subclasses()
-    @property
-    def custom_variables(self): return Variable.subclasses()
-    @property
-    def created_variables(self): return CustomVariable.custom_subclasses()
-    
-
-
-        
-        
-        
-        
-        
-        
-        
+    def __str__(self): 
+        content = {}
+        for key, value in self.items():
+            try: content[value.name()] = {k:str(v) for k, v in value.spec.todict().items()}
+            except: content[value.name()] = {}
+        return ' '.join([self.__class__.__name__, json.dumps(content, sort_keys=True, indent=3, separators=(',', ' : '))])  

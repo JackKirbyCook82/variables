@@ -58,8 +58,6 @@ class Variable(ABC):
     def __init__(self, value): self.__value = value
     @classmethod
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
-    @classmethod
-    def data(cls): return cls.spec.data
    
     def __add__(self, other): return self.add(other)
     def __sub__(self, other): return self.subtract(other)
@@ -109,8 +107,8 @@ class CustomVariable(Variable):
         super().__init__(value)
         
     @classmethod
-    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))    
-    
+    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))  
+
     def __str__(self): return self.spec.asstr(self.value)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)   
     
