@@ -40,7 +40,7 @@ class Num:
         else: return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)    
+        if isinstance(other, Number): return self.factor(self.value / other, *args, factor=other, **kwargs)    
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
 
     # TRANSFORMATIONS
@@ -110,11 +110,11 @@ class Range:
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)    
+        if isinstance(other, Number): return self.factor([val*other for val in self.value], *args, factor=other, **kwargs)    
         else: return self.operation(other.__class__, *args, method='multiply', **kwargs)([val * other.value for val in self.value])
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.factor(self.value * other, *args, factor=other, **kwargs)       
+        if isinstance(other, Number): return self.factor([val/other for val in self.value], *args, factor=other, **kwargs)       
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)([val / other.value for val in self.value])
 
     # TRANSFORMATIONS
