@@ -72,11 +72,12 @@ class Variable(ABC):
     @samevariable
     def __lt__(self, other): return self.value < other.value
     @samevariable
+    def __gt__(self, other): return self.value > other.value        
+    @samevariable
     def __le__(self, other): return self.value <= other.value
     @samevariable
     def __ge__(self, other): return self.value >= other.value
-    @samevariable
-    def __gt__(self, other): return self.value > other.value
+
 
     # REGISTER SUBCLASSES  
     __subclasses = {}    

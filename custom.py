@@ -19,6 +19,9 @@ __license__ = ""
 
 @CustomVariable.register('category')
 class Category: 
+    @samevariable
+    def __contains__(self, other): return all([item in self.values for item in other.values])
+    
     # OPERATIONS
     def add(self, other, *args, **kwargs): 
         if any([item in self.values for item in other.values]): raise VariableOverlapError(self, other, 'add')
@@ -79,13 +82,37 @@ class Range:
     def rightvalue(self): return self.value[-1]
     
     @samevariable
-    def __lt__(self, other): 
-        try: return self.leftvalue < other.leftvalue
-        except TypeError: return self.leftvalue is None and other.leftvalue is not None
+    def __contains__(self, other): return not other <= self and not other >= self
+    def contains(self, other): return other in self
+    
     @samevariable
-    def __gt__(self, other): 
-        try: return self.rightvalue > other.rightvalue
-        except TypeError: return self.rightvalue is None and other.rightvalue is not None
+    def overlaps(self, other): 
+        try: left = other.rightvalue < self.leftvalue
+        except TypeError: left = False
+        try: right = other.leftvalue > self.rightvalue
+        except TypeError: right = False
+        return left or right
+     
+    @samevariable
+    def __gt__(self, other):
+        try: left = other.leftvalue < self.leftvalue
+        except TypeError: left = other.leftvalue is None and self.leftvalue is not None
+        try: right = other.rightvalue < self.rightvalue
+        except TypeError: right = other.rightvalue is not None and self.rightvalue is None
+        return left and right
+        
+    @samevariable
+    def __lt__(self, other):
+        try: left = other.leftvalue > self.leftvalue
+        except TypeError: left = other.leftvalue is not None and self.leftvalue is None
+        try: right = other.rightvalue > self.rightvalue
+        except TypeError: right = other.rightvalue is None and self.rightvalue is not None
+        return left and right
+
+    @samevariable
+    def __ge__(self, other): return other == self or other > self
+    @samevariable
+    def __le__(self, other): return other == self or other < self
     
     # OPERATIONS
     def add(self, other, *args, **kwargs):
@@ -109,6 +136,13 @@ class Range:
         else: raise VariableOverlapError(self, other, 'subtract')
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
+    def merge(self, other, *args, **kwargs):
+        try: leftvalue = min([other.leftvalue, self.leftvalue])
+        except TypeError: leftvalue = None
+        try: rightvalue = max([other.rightvalue, self.rightvalue])
+        except TypeError: rightvalue = None
+        return self.operation(other.__class__, *args, method='merge', **kwargs)([leftvalue, rightvalue])
+
     def multiply(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.factor([val*other for val in self.value], *args, factor=other, **kwargs)    
         else: return self.operation(other.__class__, *args, method='multiply', **kwargs)([val * other.value for val in self.value])
@@ -122,8 +156,13 @@ class Range:
         self.spec.checkval(bounds)
         assert None not in bounds
         value = [bound if val is None else val for val, bound in zip(self.value, bounds)]
-        return self.__class__(value)
+        return self.transformation(*args, method='bound', **kwargs)(value)
        
+    def split(self, cut, *args, **kwargs):
+        assert isinstance(cut, Number)
+        values = ([self.leftvalue, cut], [cut, self.rightvalue])
+        return [self.transformation(*args, method='split', **kwargs)(value) for value in values]        
+    
     def average(self, *args, weight=0.5, **kwargs):
         assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
@@ -146,17 +185,7 @@ class Range:
     def factor(cls, *args, how, **kwargs): return cls.transformation(*args, method='factor', how=how, **kwargs)
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     
     
