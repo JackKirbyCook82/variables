@@ -7,6 +7,7 @@ Created on Fri Jun 7 2019
 """
 
 import json
+from collections import OrderedDict as ODict
 
 from variables.variable import Variable, CustomVariable, create_customvariable 
 from variables.date import Date, Datetime
@@ -20,33 +21,61 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
-class Variables(dict):
-    def __init__(self, *args, name, **kwargs):
+_aslist = lambda items: [items] if not isinstance(items, (tuple, list)) else list(items)  
+_flatten = lambda nesteditems: [item for items in nesteditems for item in items]
+
+
+class Variables(ODict):
+    def __init__(self, items, name=None):
+        if isinstance(items, list): pass
+        elif isinstance(items, dict): items = [(key, value) for key, value in items.items()]
+        else: raise TypeError(items)    
+        assert all([isinstance(item, tuple) for item in items])
+        assert all([len(item) == 2 for item in items])
         self.__name = name
-        argskwargs = [{key:value for key, value in arg.items()} for arg in args]
-        for argkwargs in argskwargs: kwargs.update(argkwargs)
-        super().__init__(**kwargs)        
+        super().__init__(items)      
 
     @property
-    def name(self): return self.__class__.__name__ if not self.__name else '_'.join([self.__name, self.__class__.__name__])
-    @property
-    def jsonstr(self): 
+    def name(self): return self.__name
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['='.join([key, str(value)]) for key, value in self.items()]))
+    def __str__(self): 
+        name = self.__class__.__name__ if not self.__name else '_'.join([self.__name, self.__class__.__name__])
         content = {}
         for key, value in self.items():
             try: content[value.name()] = {k:str(v) for k, v in value.spec.todict().items()}
             except: content[value.name()] = {}
-        return json.dumps(content, sort_keys=True, indent=3, separators=(',', ' : '))
-
-    def __str__(self): return ' '.join([self.name, self.jsonstr]) 
-    def copy(self): return self.__class__(super().copy(), name=self.__name)
-    def select(self, *keys): return self.__class__({key:value for key, value in self.items() if key in keys}, name=self.__name)
-    def update(self, **kwargs): 
-        asdict = {key:value for key, value in self.items()}
-        asdict.update(kwargs)
-        return self.__class__(asdict, name=self.__name)
+        jsonstr = json.dumps(content, sort_keys=True, indent=3, separators=(',', ' : '))                
+        return ' '.join([name, jsonstr]) 
     
+    def copy(self): return self.__class__([(key, value) for key, value in self.items()], name=self.__name)
+    def select(self, keys): 
+        assert isinstance(keys, list)
+        return self.__class__([(key, self[key]) for key in keys], name=self.__name)
+    def update(self, items): 
+        assert isinstance(items, list)
+        assert all([isinstance(item, tuple) for item in items])
+        assert all([len(item) == 2 for item in items])
+        items = ODict(items)
+        updated = [(key, items.get(key, value)) for key, value in self.items()]
+        new = [(key, value) for key, value in items.items() if key not in self.keys()]
+        return self.__class__(updated + new, name=self.__name)
+
     @classmethod
     def create(cls, name=None, **specs):
-        custom_variables = {key:create_customvariable(spec) for key, spec in specs.items()}
-        variables = {key:value for key, value in Variable.subclasses().items()}
-        return cls(**variables, **custom_variables,name=name)   
+        custom_variables = [(key, create_customvariable(spec)) for key, spec in specs.items()]
+        variables = [(key, value) for key, value in Variable.subclasses().items()]
+        return cls(variables + custom_variables, name=name)   
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

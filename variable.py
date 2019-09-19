@@ -8,8 +8,6 @@ Created on Sun Jun 9 2019
 
 from abc import ABC, abstractmethod
 
-from utilities.strings import uppercase
-
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
 __all__ = ['Variable', 'CustomVariable', 'create_customvariable', 'samevariable']
@@ -19,13 +17,15 @@ __license__ = ""
 
 CUSTOM_VARIABLES = {}
 
+
 def create_customvariable(spec):
     try: return CUSTOM_VARIABLES[spec.jsonstr]
     except:      
         base = CustomVariable.getsubclass(spec.datatype)
-        name = '_'.join([uppercase(spec.data), base.__name__])
+        name = '_'.join([spec.dataname, base.__name__])
         attrs = {'spec':spec}
         newvariable = type(name, (base,), attrs)
+        print('Created Custom Variable: {}\n'.format(newvariable.name()))
         CUSTOM_VARIABLES[spec.jsonstr] = newvariable
         return newvariable  
 
@@ -56,6 +56,7 @@ class Variable(ABC):
     @property
     def value(self): return self.__value
     def __init__(self, value): self.__value = value
+    
     @classmethod
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
    
@@ -91,7 +92,7 @@ class Variable(ABC):
         def wrapper(subclass):
             name = subclass.__name__
             bases = (subclass, cls)
-            newsubclass = type(name, bases, dict(datatype=uppercase(datatype)))
+            newsubclass = type(name, bases, dict(datatype=datatype.lower()))
             Variable.__subclasses[datatype.lower()] = newsubclass
             return newsubclass
         return wrapper 
@@ -127,7 +128,7 @@ class CustomVariable(Variable):
         def wrapper(subclass):
             name = subclass.__name__
             bases = (subclass, cls)
-            newsubclass = type(name, bases, dict(datatype=uppercase(datatype)))
+            newsubclass = type(name, bases, dict(datatype=datatype.lower()))
             CustomVariable.__subclasses[datatype.lower()] = newsubclass
             return newsubclass
         return wrapper  
