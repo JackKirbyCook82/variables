@@ -79,8 +79,8 @@ class Geography:
 
     def __contains__(self, other): return other.contains(self)
     def contains(self, other):
-        assert other.getvalue(-1) == self.allChar
-        return self[:-1] == other[:-1]
+        if self == other: return True
+        else: return self[:-1] == other[:-1] if other.getvalue(-1) == self.allChar else False
         
     @classmethod
     def fromstr(cls, geostr, **kwargs):
