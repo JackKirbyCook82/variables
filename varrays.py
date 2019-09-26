@@ -6,14 +6,23 @@ Created on Thurs Jun 6 2019
 
 """
 
-from functools import reduce
+from functools import reduce, update_wrapper
+import numpy as np
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['varray_fromvalues', 'summation', 'minimum', 'maximum', 'mean', 'average', 'combine_contained', 'combine_overlap',
-           'bound', 'consolidate', 'unconsolidate', 'cumulate', 'uncumulate', 'moving_average', 'moving_total', 'moving_bracket', 'moving_differential']
+__all__ = ['varray_fromvalues', 'summation', 'minimum', 'maximum', 'mean', 'average', 'upper_cumulate', 'lower_cumulate', 'upper_uncumulate', 'lower_uncumulate', 
+           'moving_average', 'moving_total', 'moving_differential', 'moving_minimum', 'moving_maximum', 'groupby_bins', 'groupby_contains', 'groupby_overlaps']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
+
+
+_flatten = lambda nesteditems: [item for items in nesteditems for item in items]
+
+
+class VariableMethodNotSupported(Exception): 
+    def __init__(self, function, datatype): 
+        super().__init__('{}([<{}>,])'.format(function.__name__, datatype)) 
 
 
 # FACTORY
@@ -22,85 +31,213 @@ def varray_fromvalues(data, *args, variable, **kwargs):
 
 
 # SUPPORT
-def varraytype(varray): 
-    varraytypes = list(set([item.datatype.lower() for item in varray]))
-    assert len(varraytypes) == 1
-    return varraytypes[0]
+def varray_datatype(varray): 
+    varray_datatypes = list(set([item.datatype.lower() for item in varray]))
+    assert len(varray_datatypes) == 1
+    return varray_datatypes[0]
 
-def sort(varray, ascending=True):
-    return sorted(varray, reverse=not ascending)
+def varray_type(varray):
+    varray_types = list(set([item.__class__ for item in varray]))
+    assert len(varray_types) == 1
+    return varray_types[0]    
 
+def varray_dispatcher(mainfunc):
+    _registry = {}    
+    def update(regfunc, *keys): _registry.update({key:regfunc for key in keys})
+    def registry(): return _registry
     
-# REDUCTIONS
-def summation(varray, *args, **kwargs): return reduce(lambda x, y: x.add(y, *args, **kwargs), varray)
-def minimum(varray, *args, **kwargs): return reduce(lambda x, y: min(x, y), varray)
-def maximum(varray, *args, **kwargs): return reduce(lambda x, y: max(x, y), varray)
+    def register(*keys): 
+        def register_decorator(regfunc): 
+            update(regfunc, *keys) 
+            def register_wrapper(*args, **kwargs): 
+                return regfunc(*args, **kwargs) 
+            return register_wrapper 
+        return register_decorator 
 
-def mean(varray, *args, **kwargs): return reduce(lambda x, y: x.add(y, *args, **kwargs), varray) / len(varray)
-def average(varray, *args, weights=None, **kwargs): 
+    def wrapper(varray, *args, **kwargs): 
+        datatype = varray_datatype(varray)
+        func = _registry.get(datatype, mainfunc)
+        if datatype in _registry.keys(): return func(varray, *args, **kwargs)         
+        else: raise VariableMethodNotSupported(mainfunc, datatype)
+
+    wrapper.register = register 
+    wrapper.registry = registry
+    update_wrapper(wrapper, mainfunc)
+    return wrapper
+    
+
+# REDUCTIONS
+@varray_dispatcher
+def couple(varray, *args, **kwargs): pass
+@couple.register('num', 'range', 'category')
+def _couple(varray, *args, **kwargs): return reduce(lambda x, y: x.couple(y, *args, **kwargs), varray)    
+
+@varray_dispatcher
+def summation(varray, *args, **kwargs): pass
+@summation.register('num', 'range', 'category', 'geography')
+def _summation(varray, *args, **kwargs): return reduce(lambda x, y: x.add(y, *args, **kwargs), varray)
+
+@varray_dispatcher
+def minimum(varray, *args, **kwargs): pass
+@minimum.register('num', 'range', 'date', 'datetime')
+def _minimum(varray, *args, **kwargs): return reduce(lambda x, y: min(x, y), varray)
+      
+@varray_dispatcher
+def maximum(varray, *args, **kwargs): pass
+@minimum.register('num', 'range', 'date', 'datetime')
+def _maximum(varray, *args, **kwargs): return reduce(lambda x, y: max(x, y), varray)
+
+@varray_dispatcher
+def mean(varray, *args, **kwargs): pass
+@mean.register('num')
+def _mean(varray, *args, **kwargs): return reduce(lambda x, y: x.add(y, *args, **kwargs), varray) / len(varray)
+
+@varray_dispatcher
+def average(varray, *args, **kwargs): pass
+@average.register('num')
+def _average(varray, *args, weights=None, **kwargs):
     if not weights: weights = [1/len(varray)] * len(varray)
     assert len(weights) == len(varray)
-    return summation([item.multiply(weight, *args, **kwargs) for item, weight in zip(varray, weights)], *args, **kwargs)
- 
-def combine_contained(varray, *args, ascending=True, **kwargs):
-    varray = sort(varray, ascending=ascending)
-    newvarray = [varray[0]]
-    for item in varray[1:]:   
-        if item in newvarray[-1]: newvarray[-1] = item
-        elif newvarray[-1] in item: pass
-        else: newvarray.append(item)   
-    return newvarray
+    return summation([item.multiply(weight, *args, **kwargs) for item, weight in zip(varray, weights)], *args, **kwargs)   
+    
 
-def combine_overlap(varray, *args, ascending=True, **kwargs):
-    varray = sort(varray, ascending=ascending)
-    newvarray = [varray[0]]
-    for item in varray[1:]:
-        if varray[-1].overlaps(item): newvarray[-1] = newvarray[-1].merge(item)
-        else: newvarray.append(item)
-    return newvarray
+#GROUPING    
+@varray_dispatcher
+def groupby_bins(varray, *args, groups, **kwargs): pass
+@groupby_bins.register('num')
+def _groupby_bins_nums(varray, *args, groups, right=True, **kwargs):
+    NumVariable = varray_type(varray)
+    RangeVariable = NumVariable.unconsolidate(*args, how='group', **kwargs)
+    grpkeys = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]] 
+    grpkeys = [RangeVariable(grpkey) for grpkey in grpkeys]
+    grpvalues = [[] for i in range(len(grpkeys))]
+    indexes = np.digitize([item.value for item in varray], groups, right=True)
+    for index, item in zip(indexes, varray): grpvalues[index].append(item)
+    groupings = {str(grpkey):grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
+    return groupings
+@groupby_bins.register('range')
+def _groupby_bins_range(varray, *args, groups, **kwargs):
+    RangeVariable = varray_type(varray)
+    grpkeys = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]   
+    grpkeys = [RangeVariable(grpkey) for grpkey in grpkeys]
+    grpvalues = [[] for i in range(len(grpkeys))]
+    grpvalues = [[item for item in varray if grpkey.overlaps(item)] for grpkey in grpkeys]
+    assert len(_flatten(grpvalues)) == len(varray)
+    groupings = {str(grpkey):grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
+    return groupings    
 
+@varray_dispatcher
+def groupby_contains(varray, *args, **kwargs): pass
+@groupby_contains.register('category', 'range')
+def _groupby_contains(varray, *args, **kwargs): 
+    groupings = {str(grpkey):[grpvalue for grpvalue in varray if grpkey.contains(grpvalue)] for grpkey in varray}
+    groupings = {key:values for key, values in groupings.items() if not any([key in othervalues for otherkey, othervalues in groupings.items() if key != otherkey])}
+    return groupings
+
+@varray_dispatcher
+def groupby_overlaps(varray, *args, **kwargs): pass
+@groupby_overlaps.register('category', 'range')
+def _groupby_overlaps(varray, *args, **kwargs):
+    groupings = {str(grpkey):[grpvalue for grpvalue in varray if grpkey.overlaps(grpvalue)] for grpkey in varray}
+    groupings = {str(couple(values)):values for values in set(*groupings.values())}
+    return groupings
 
 # BROADCASTING
-def bound(varray, *args, bounds, **kwargs): return [item.bound(*args, bounds=bounds, **kwargs) for item in varray]
+@varray_dispatcher
+def consolidate(varray, *args, how, **kwargs): pass
+@consolidate.register('range')
+def _consolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
 
-def consolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
-def unconsolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray] 
+@varray_dispatcher
+def unconsolidate(varray, *args, how, **kwargs): pass
+@unconsolidate.register('num')
+def _unconsolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
 
 
 # ROLLING
-def cumulate(varray, *args, direction, **kwargs): 
+@varray_dispatcher
+def upper_cumulate(varray, *args, **kwargs): pass
+@upper_cumulate.register('num', 'range')
+def _upper_cumulate(varray, *args, **kwargs): 
     function = lambda x: [summation(x[slice(0, i+1)], *args, **kwargs) for i in range(len(varray))]
-    if direction == 'lower': return function(varray)
-    elif direction == 'upper': return function(varray[::-1])[::-1]
-    else: raise TypeError(direction)
-    
-def uncumulate(varray, *args, direction, **kwargs): 
-    function = lambda x: [x[0]] + [x - y for x, y in zip(x[1:], x[:-1])]
-    if direction == 'lower': return function(varray)
-    elif direction == 'upper': return function(varray[::-1])[::-1]
-    else: raise TypeError(direction)
+    return function(varray[::-1])[::-1]
 
-def moving_average(varray, *args, period, **kwargs):
+@varray_dispatcher
+def lower_cumulate(varray, *args, **kwargs): pass
+@lower_cumulate.register('num', 'range')
+def _lower_cumulate(varray, *args, **kwargs): 
+    function = lambda x: [summation(x[slice(0, i+1)], *args, **kwargs) for i in range(len(varray))]
+    return function(varray)
+  
+@varray_dispatcher
+def upper_uncumulate(varray, *args, **kwargs): pass
+@upper_uncumulate.register('num', 'range')
+def _upper_uncumulate(varray, *args, **kwargs): 
+    function = lambda x: [x[0]] + [x - y for x, y in zip(x[1:], x[:-1])]
+    return function(varray[::-1])[::-1]
+    
+@varray_dispatcher
+def lower_uncumulate(varray, *args, **kwargs): pass
+@lower_uncumulate.register('num', 'range')
+def _lower_uncumulate(varray, *args, **kwargs): 
+    function = lambda x: [x[0]] + [x - y for x, y in zip(x[1:], x[:-1])]
+    return function(varray)
+
+@varray_dispatcher
+def moving_minimum(varray, *args, period, **kwargs): pass
+@moving_minimum.register('num', 'date', 'datetime')
+def _moving_minimum(varray, *args, period, **kwargs):
+    assert isinstance(period, int)
+    assert len(varray) >= period
+    return [minimum(varray[i:i+period]) for i in range(0, len(varray)-period+1)]
+
+@varray_dispatcher
+def moving_maximum(varray, *args, period, **kwargs): pass
+@moving_maximum.register('num', 'date', 'datetime')
+def _moving_maximum(varray, *args, period, **kwargs):
+    assert isinstance(period, int)
+    assert len(varray) >= period
+    return [maximum(varray[i:i+period]) for i in range(0, len(varray)-period+1)]
+
+@varray_dispatcher
+def moving_average(varray, *args, period, **kwargs): pass
+@moving_average.register('num')
+def _moving_average(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period 
     return [mean(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
 
-def moving_total(varray, *args, period, **kwargs):
+@varray_dispatcher
+def moving_total(varray, *args, period, **kwargs): pass
+@moving_total.register('num', 'range')
+def _moving_total(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
     return [summation(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
 
-def moving_bracket(varray, *args, period, **kwargs):
+@varray_dispatcher
+def moving_differential(varray, *args, period, **kwargs): pass
+@moving_differential.register('num')
+def _moving_differential_num(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    if varraytype(varray) == 'num': return [varray[i].bracket(varray[i+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]
-    elif varraytype(varray) == 'range': return moving_total(varray, *args, period=period, **kwargs)
-    else: raise ValueError(varraytype(varray))    
+    return [varray[i].subtract(varray[i+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]  
+@moving_differential.register('range')
+def _moving_differential_range(varray, *args, period, **kwargs):
+    assert isinstance(period, int)
+    assert len(varray) >= period
+    return [item.differental(*args, **kwargs) for item in moving_total(varray, *args, period=period, **kwargs)]
+
+@varray_dispatcher
+def moving_coupling(varray, *args, period, **kwargs): pass
+@moving_coupling.register('num', 'range', 'category')
+def _moving_coupling(varray, *args, period, **kwargs):
+    assert isinstance(period, int)
+    assert len(varray) >= period
+    return [couple(varray[i:i+period]) for i in range(0, len(varray)-period+1)]   
+
+
     
-def moving_differential(varray, *args, period, **kwargs):
-    assert isinstance(period, int)
-    assert len(varray) >= period
-    return [varray[i].subtract(varray[i+period], *args, **kwargs) for i in range(0, len(varray)-period)]  
     
 
     

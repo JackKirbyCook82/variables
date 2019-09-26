@@ -39,13 +39,13 @@ class Variables(ODict):
     def name(self): return self.__name
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['='.join([key, str(value)]) for key, value in self.items()]))
     def __str__(self): 
-        name = self.__class__.__name__ if not self.__name else '_'.join([self.__name, self.__class__.__name__])
+        namestr = self.__class__.__name__ if not self.__name else '_'.join([self.__name, self.__class__.__name__])
         content = {}
         for key, value in self.items():
             try: content[value.name()] = {k:str(v) for k, v in value.spec.todict().items()}
             except: content[value.name()] = {}
         jsonstr = json.dumps(content, sort_keys=True, indent=3, separators=(',', ' : '))                
-        return ' '.join([name, jsonstr]) 
+        return ' '.join([namestr, jsonstr]) 
     
     def copy(self): return self.__class__([(key, value) for key, value in self.items()], name=self.__name)
     def select(self, keys): 
