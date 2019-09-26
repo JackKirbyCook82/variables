@@ -7,6 +7,8 @@ Created on Sun Jun 9 2019
 
 from numbers import Number
 
+from utilities.dispatchers import keyword_singledispatcher as keydispatcher
+
 from variables.variable import CustomVariable, VariableOverlapError, samevariable
 
 __version__ = "1.0.0"
@@ -41,30 +43,32 @@ class Category:
 
 @CustomVariable.register('num')
 class Num:
+    @keydispatcher('how')
+    def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)    
+    
     # OPERATIONS
     def add(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='add', **kwargs)(self.value + other.value)   
     def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
     
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.transformation(*args, factor=other, **kwargs)(self.value * other)    
+        if isinstance(other, Number): return self.operation(*args, factor=other, **kwargs)(self.value * other)    
         else: return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.transformation(*args, factor=other, **kwargs)(self.value / other)    
+        if isinstance(other, Number): return self.operation(*args, factor=other, **kwargs)(self.value / other)    
         else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
 
-    def couple(self, other, *args, **kwargs):
+    @unconsolidate.register('couple')
+    def couple(self, other, *args, how, **kwargs):
         return self.operation(other.__class__, *args, method='unconsolidate', how='couple', **kwargs)([min(self.value, other.value), max(self.value, other.value)])
 
     # TRANSFORMATIONS
-    def uncumulate(self, *args, direction, **kwargs):
+    @unconsolidate.register('uncumulate')
+    def uncumulate(self, *args, how, direction, **kwargs):
         assert direction == 'lower' or direction == 'upper'
         assert direction == self.numdirection
         value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
         return self.transformation(*args, method='unconsolidate', how='uncumulate', direction=direction, **kwargs)(value)    
-
-    @classmethod
-    def unconsolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='unconsolidate', how=how, **kwargs)
 
 
 @CustomVariable.register('range')
@@ -108,6 +112,9 @@ class Range:
     @samevariable
     def __le__(self, other): return other == self or other < self
     
+    @keydispatcher('how')
+    def consolidate(self, *args, how, **kwargs): pass 
+    
     # OPERATIONS
     def add(self, other, *args, **kwargs):
         if all([self.leftvalue == other.rightvalue, self.leftvalue is not None, other.rightvalue is not None]): value = [other.leftvalue, self.rightvalue]
@@ -147,24 +154,23 @@ class Range:
         return self.operation(other.__class__, *args, method='couple', **kwargs)([leftvalue, rightvalue])     
 
     # TRANSFORMATIONS   
-    def average(self, *args, weight=0.5, **kwargs):
+    @consolidate.register('average')
+    def average(self, *args, how, weight=0.5, **kwargs):
         assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
         value = weight * self.leftvalue + (1-weight) * self.rightvalue
         return self.transformation(*args, method='consolidate', how='average', weight=weight, **kwargs)(value)
     
-    def cumulate(self, *args, direction, **kwargs):
+    @consolidate.register('cumulate')
+    def cumulate(self, *args, how, direction, **kwargs):
         assert direction == self.spec.direction(self.value)
         assert direction == 'lower' or direction == 'upper'
         value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
         return self.transformation(*args, method='consolidate', how='cumulate', direction=direction, **kwargs)(value)
     
-    def differential(self, *args, **kwargs):
+    @consolidate.register('differential')
+    def differential(self, *args, how, **kwargs):
         return self.transformation(*args, method='consolidate', how='differential', **kwargs)(self.rightvalue - self.leftvalue)    
     
-    @classmethod
-    def consolidate(cls, *args, how, **kwargs): return cls.transformation(*args, method='consolidate', how=how, **kwargs)
 
-    
-    
     

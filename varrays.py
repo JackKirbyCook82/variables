@@ -12,7 +12,7 @@ import numpy as np
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
 __all__ = ['varray_fromvalues', 'summation', 'minimum', 'maximum', 'mean', 'average', 'upper_cumulate', 'lower_cumulate', 'upper_uncumulate', 'lower_uncumulate', 
-           'moving_average', 'moving_total', 'moving_differential', 'moving_minimum', 'moving_maximum', 'groupby_bins', 'groupby_contains', 'groupby_overlaps']
+           'moving_average', 'moving_summation', 'moving_differential', 'moving_minimum', 'moving_maximum', 'moving_couple', 'groupby_bins', 'groupby_contains', 'groupby_overlaps']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -114,7 +114,7 @@ def _groupby_bins_nums(varray, *args, groups, right=True, **kwargs):
     indexes = np.digitize([item.value for item in varray], groups, right=True)
     for index, item in zip(indexes, varray): grpvalues[index].append(item)
     groupings = {str(grpkey):grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
-    return groupings
+    return groupings, RangeVariable
 @groupby_bins.register('range')
 def _groupby_bins_range(varray, *args, groups, **kwargs):
     RangeVariable = varray_type(varray)
@@ -124,7 +124,7 @@ def _groupby_bins_range(varray, *args, groups, **kwargs):
     grpvalues = [[item for item in varray if grpkey.overlaps(item)] for grpkey in grpkeys]
     assert len(_flatten(grpvalues)) == len(varray)
     groupings = {str(grpkey):grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
-    return groupings    
+    return groupings, RangeVariable    
 
 @varray_dispatcher
 def groupby_contains(varray, *args, **kwargs): pass
@@ -132,7 +132,7 @@ def groupby_contains(varray, *args, **kwargs): pass
 def _groupby_contains(varray, *args, **kwargs): 
     groupings = {str(grpkey):[grpvalue for grpvalue in varray if grpkey.contains(grpvalue)] for grpkey in varray}
     groupings = {key:values for key, values in groupings.items() if not any([key in othervalues for otherkey, othervalues in groupings.items() if key != otherkey])}
-    return groupings
+    return groupings, varray_type(varray)
 
 @varray_dispatcher
 def groupby_overlaps(varray, *args, **kwargs): pass
@@ -140,18 +140,18 @@ def groupby_overlaps(varray, *args, **kwargs): pass
 def _groupby_overlaps(varray, *args, **kwargs):
     groupings = {str(grpkey):[grpvalue for grpvalue in varray if grpkey.overlaps(grpvalue)] for grpkey in varray}
     groupings = {str(couple(values)):values for values in set(*groupings.values())}
-    return groupings
+    return groupings, varray_type(varray)
 
 # BROADCASTING
 @varray_dispatcher
 def consolidate(varray, *args, how, **kwargs): pass
 @consolidate.register('range')
-def _consolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
+def _consolidate(varray, *args, how, **kwargs): return [item.consolidate(*args, how=how, **kwargs) for item in varray]   
 
 @varray_dispatcher
 def unconsolidate(varray, *args, how, **kwargs): pass
 @unconsolidate.register('num')
-def _unconsolidate(varray, *args, how, **kwargs): return [getattr(item, how)(*args, **kwargs) for item in varray]   
+def _unconsolidate(varray, *args, how, **kwargs): return [item.unconsolidate(*args, how=how, **kwargs) for item in varray]   
 
 
 # ROLLING
@@ -208,9 +208,9 @@ def _moving_average(varray, *args, period, **kwargs):
     return [mean(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
 
 @varray_dispatcher
-def moving_total(varray, *args, period, **kwargs): pass
-@moving_total.register('num', 'range')
-def _moving_total(varray, *args, period, **kwargs):
+def moving_summation(varray, *args, period, **kwargs): pass
+@moving_summation.register('num', 'range')
+def moving_summation(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
     return [summation(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
@@ -226,12 +226,12 @@ def _moving_differential_num(varray, *args, period, **kwargs):
 def _moving_differential_range(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [item.differental(*args, **kwargs) for item in moving_total(varray, *args, period=period, **kwargs)]
+    return [item.differental(*args, **kwargs) for item in moving_summation(varray, *args, period=period, **kwargs)]
 
 @varray_dispatcher
-def moving_coupling(varray, *args, period, **kwargs): pass
-@moving_coupling.register('num', 'range', 'category')
-def _moving_coupling(varray, *args, period, **kwargs):
+def moving_couple(varray, *args, period, **kwargs): pass
+@moving_couple.register('num', 'range', 'category')
+def _moving_couple(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
     return [couple(varray[i:i+period]) for i in range(0, len(varray)-period+1)]   
