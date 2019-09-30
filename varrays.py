@@ -104,6 +104,7 @@ def _average(varray, *args, weights=None, **kwargs):
 #GROUPING    
 @varray_dispatcher
 def groupby_bins(varray, *args, groups, **kwargs): pass
+
 @groupby_bins.register('num')
 def _groupby_bins_nums(varray, *args, groups, right=True, **kwargs):
     NumVariable = varray_type(varray)
@@ -113,8 +114,9 @@ def _groupby_bins_nums(varray, *args, groups, right=True, **kwargs):
     grpvalues = [[] for i in range(len(grpkeys))]
     indexes = np.digitize([item.value for item in varray], groups, right=True)
     for index, item in zip(indexes, varray): grpvalues[index].append(item)
-    groupings = {str(grpkey):grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
-    return groupings, RangeVariable
+    groupings = {grpkey:grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
+    return groupings
+
 @groupby_bins.register('range')
 def _groupby_bins_range(varray, *args, groups, **kwargs):
     RangeVariable = varray_type(varray)
@@ -123,24 +125,24 @@ def _groupby_bins_range(varray, *args, groups, **kwargs):
     grpvalues = [[] for i in range(len(grpkeys))]
     grpvalues = [[item for item in varray if grpkey.overlaps(item)] for grpkey in grpkeys]
     assert len(_flatten(grpvalues)) == len(varray)
-    groupings = {str(grpkey):grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
-    return groupings, RangeVariable    
+    groupings = {grpkey:grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
+    return groupings 
 
 @varray_dispatcher
 def groupby_contains(varray, *args, **kwargs): pass
 @groupby_contains.register('category', 'range')
 def _groupby_contains(varray, *args, **kwargs): 
-    groupings = {str(grpkey):[grpvalue for grpvalue in varray if grpkey.contains(grpvalue)] for grpkey in varray}
-    groupings = {key:values for key, values in groupings.items() if not any([key in othervalues for otherkey, othervalues in groupings.items() if key != otherkey])}
-    return groupings, varray_type(varray)
+    groupings = {grpkey:[grpvalue for grpvalue in varray if grpkey.contains(grpvalue)] for grpkey in varray} 
+    groupings = {key:values for key, values in groupings.items() if not any([key in othervalues for otherkey, othervalues in groupings.items() if key != otherkey])} 
+    return groupings
 
 @varray_dispatcher
 def groupby_overlaps(varray, *args, **kwargs): pass
 @groupby_overlaps.register('category', 'range')
 def _groupby_overlaps(varray, *args, **kwargs):
-    groupings = {str(grpkey):[grpvalue for grpvalue in varray if grpkey.overlaps(grpvalue)] for grpkey in varray}
-    groupings = {str(couple(values)):values for values in set(*groupings.values())}
-    return groupings, varray_type(varray)
+    groupings = {grpkey:[grpvalue for grpvalue in varray if grpkey.overlaps(grpvalue)] for grpkey in varray}
+    groupings = {couple(values):values for values in set(*groupings.values())}
+    return groupings
 
 # BROADCASTING
 @varray_dispatcher

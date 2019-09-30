@@ -51,12 +51,14 @@ class Num:
     def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
     
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.operation(*args, factor=other, **kwargs)(self.value * other)    
-        else: return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
+        if isinstance(other, Number): return self.transformation(*args, method='factor', how='multiply', factor=other, **kwargs)(self.value * other)    
+        elif isinstance(other, Num): return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
+        else: raise TypeError(type(other))
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.operation(*args, factor=other, **kwargs)(self.value / other)    
-        else: return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
+        if isinstance(other, Number): return self.transformation(*args, method='factor', how='divide', factor=other, **kwargs)(self.value / other)    
+        elif isinstance(other, Num): return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
+        else: raise TypeError(type(other))
 
     @unconsolidate.register('couple')
     def couple(self, other, *args, how, **kwargs):
@@ -79,38 +81,43 @@ class Range:
     def rightvalue(self): return self.value[-1]
     
     @samevariable
-    def contains(self, other): return not other < self and not other > self
-    @samevariable
-    def overlaps(self, other):
-        try: left = other.leftvalue < self.rightvalue
-        except: left = True
-        try: right = other.rightvalue > self.leftvalue
-        except: right = True
-        return left or right
+    def contains(self, other): 
+        try: left = self.leftvalue <= other.leftvalue
+        except: left = self.leftvalue is None
+        try: right = self.rightvalue >= other.rightvalue
+        except: right = self.rightvalue is None
+        return left and right      
     
     @samevariable
-    def __contains__(self, other): return self.contains(other)
-     
-    @samevariable
-    def __gt__(self, other):
-        try: left = other.leftvalue < self.leftvalue
-        except TypeError: left = other.leftvalue is None and self.leftvalue is not None
-        try: right = other.rightvalue < self.rightvalue
-        except TypeError: right = other.rightvalue is not None and self.rightvalue is None
+    def overlaps(self, other):
+        try: left = not self.leftvalue >= other.rightvalue
+        except TypeError: left = any([self.leftvalue is None, other.rightvalue is None])
+        try: right = not self.rightvalue <= other.leftvalue
+        except TypeError: right = any([self.rightvalue is None, other.leftvalue is None])
         return left and right
-        
+    
     @samevariable
     def __lt__(self, other):
-        try: left = other.leftvalue > self.leftvalue
-        except TypeError: left = other.leftvalue is not None and self.leftvalue is None
-        try: right = other.rightvalue > self.rightvalue
-        except TypeError: right = other.rightvalue is None and self.rightvalue is not None
+        try: left = self.leftvalue < other.leftvalue
+        except TypeError: left = self.leftvalue is None and other.leftvalue is not None
+        try: right = self.rightvalue < other.rightvalue
+        except TypeError: right = self.rightvalue is not None and other.rightvalue is None
+        return left and right    
+    
+    @samevariable
+    def __gt__(self, other):
+        try: left = self.leftvalue > other.leftvalue
+        except TypeError: left = self.leftvalue is not None and other.leftvalue is None
+        try: right = self.rightvalue > other.rightvalue
+        except TypeError: right = self.rightvalue is None and other.rightvalue is not None
         return left and right
-
+  
     @samevariable
-    def __ge__(self, other): return other == self or other > self
+    def __contains__(self, other): return self.contains(other)
     @samevariable
-    def __le__(self, other): return other == self or other < self
+    def __le__(self, other): return self == other or self < other
+    @samevariable
+    def __ge__(self, other): return self == other or self > other
     
     @keydispatcher('how')
     def consolidate(self, *args, how, **kwargs): pass 
@@ -138,13 +145,17 @@ class Range:
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.transformation(*args, factor=other, **kwargs)([val*other for val in self.value])    
-        else: return self.operation(other.__class__, *args, method='multiply', **kwargs)([val*other.value for val in self.value])
+        if isinstance(other, Number): return self.transformation(*args, method='factor', how='multiply', factor=other, **kwargs)([val*other for val in self.value])    
+        elif isinstance(other, Num): return self.operation(other, *args, method='multiply', **kwargs)([val*other.value for val in self.value])   
+        elif isinstance(other, Range): return self.operation(other.__class__, *args, method='multiply', **kwargs)([val*other.value for val in self.value])
+        else: TypeError(type(other))
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.transformation(*args, factor=other, **kwargs)([val/other for val in self.value])       
-        else: return self.operation(other.__class__, *args, method='divide', **kwargs)([val/other.value for val in self.value])
-
+        if isinstance(other, Number): return self.transformation(*args, method='factor', how='divide', factor=other, **kwargs)([val/other for val in self.value])    
+        elif isinstance(other, Num): return self.operation(other, *args, method='divide', **kwargs)([val/other.value for val in self.value])   
+        elif isinstance(other, Range): return self.operation(other.__class__, *args, method='divide', **kwargs)([val/other.value for val in self.value])
+        else: TypeError(type(other))
+        
     def couple(self, other, *args, **kwargs):
         assert isinstance(other, self.__class__)
         try: leftvalue = min([self.leftvalue, other.leftvalue])
@@ -173,4 +184,22 @@ class Range:
         return self.transformation(*args, method='consolidate', how='differential', **kwargs)(self.rightvalue - self.leftvalue)    
     
 
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     

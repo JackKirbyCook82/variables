@@ -56,6 +56,7 @@ class Variable(ABC):
     @property
     def value(self): return self.__value
     def __init__(self, value): self.__value = value
+    def __hash__(self): return hash(str(self))
     
     @classmethod
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
