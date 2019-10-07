@@ -191,7 +191,7 @@ def moving_minimum(varray, *args, period, **kwargs): pass
 def _moving_minimum(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [minimum(varray[i:i+period]) for i in range(0, len(varray)-period+1)]
+    return [minimum(varray[i:i+1+period]) for i in range(0, len(varray)-period)]
 
 @varray_dispatcher
 def moving_maximum(varray, *args, period, **kwargs): pass
@@ -199,7 +199,7 @@ def moving_maximum(varray, *args, period, **kwargs): pass
 def _moving_maximum(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [maximum(varray[i:i+period]) for i in range(0, len(varray)-period+1)]
+    return [maximum(varray[i:i+1+period]) for i in range(0, len(varray)-period)]
 
 @varray_dispatcher
 def moving_average(varray, *args, period, **kwargs): pass
@@ -207,7 +207,7 @@ def moving_average(varray, *args, period, **kwargs): pass
 def _moving_average(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period 
-    return [mean(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
+    return [mean(varray[i:i+1+period]) for i in range(0, len(varray)-period)]  
 
 @varray_dispatcher
 def moving_summation(varray, *args, period, **kwargs): pass
@@ -215,7 +215,7 @@ def moving_summation(varray, *args, period, **kwargs): pass
 def moving_summation(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [summation(varray[i:i+period]) for i in range(0, len(varray)-period+1)]  
+    return [summation(varray[i:i+1+period]) for i in range(0, len(varray)-period)]  
 
 @varray_dispatcher
 def moving_differential(varray, *args, period, **kwargs): pass
@@ -236,7 +236,7 @@ def moving_couple(varray, *args, period, **kwargs): pass
 def _moving_couple(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [couple(varray[i:i+period]) for i in range(0, len(varray)-period+1)]   
+    return [couple(varray[i:i+1+period]) for i in range(0, len(varray)-period)]   
 
 
     

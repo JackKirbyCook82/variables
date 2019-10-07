@@ -37,9 +37,8 @@ class Variables(ODict):
 
     @property
     def name(self): return self.__name
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['='.join([key, str(value)]) for key, value in self.items()]))
     def __str__(self): 
-        namestr = self.__class__.__name__ if not self.__name else '_'.join([self.__name, self.__class__.__name__])
+        namestr = self.__class__.__name__ if not self.__name else ' '.join([self.__name, self.__class__.__name__])
         content = {}
         for key, value in self.items():
             try: content[value.name()] = {k:str(v) for k, v in value.spec.todict().items()}

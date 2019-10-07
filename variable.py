@@ -25,7 +25,7 @@ def create_customvariable(spec):
         name = '_'.join([spec.dataname, base.__name__])
         attrs = {'spec':spec}
         newvariable = type(name, (base,), attrs)
-        print('Created Custom Variable: {}\n'.format(newvariable.name()))
+        print('Created: {}\n'.format(newvariable.name()))
         CUSTOM_VARIABLES[spec.jsonstr] = newvariable
         return newvariable  
 

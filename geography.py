@@ -38,6 +38,8 @@ class Geography:
     def __geonum(self, key, value): return _GEOLENGTHS[key] * self.allID if self.__geotype(value) == 'all' else str(value).zfill(_GEOLENGTHS[key])
 
     def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))
+    def __hash__(self): return hash(str(self))
+    
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
     def items(self): return zip(self.value.keys(), self.value.values())

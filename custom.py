@@ -61,16 +61,18 @@ class Num:
         else: raise TypeError(type(other))
 
     @unconsolidate.register('couple')
-    def couple(self, other, *args, how, **kwargs):
-        return self.operation(other.__class__, *args, method='unconsolidate', how='couple', **kwargs)([min(self.value, other.value), max(self.value, other.value)])
+    def couple(self, other, *args, how='couple', **kwargs):
+        assert how == 'couple'
+        return self.operation(other.__class__, *args, method='unconsolidate', how=how, **kwargs)([min(self.value, other.value), max(self.value, other.value)])
 
     # TRANSFORMATIONS
     @unconsolidate.register('uncumulate')
-    def uncumulate(self, *args, how, direction, **kwargs):
+    def uncumulate(self, *args, how='uncumulate', direction, **kwargs):
+        assert how == 'uncumulate'
         assert direction == 'lower' or direction == 'upper'
         assert direction == self.numdirection
         value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
-        return self.transformation(*args, method='unconsolidate', how='uncumulate', direction=direction, **kwargs)(value)    
+        return self.transformation(*args, method='unconsolidate', how=how, direction=direction, **kwargs)(value)    
 
 
 @CustomVariable.register('range')
@@ -166,22 +168,25 @@ class Range:
 
     # TRANSFORMATIONS   
     @consolidate.register('average')
-    def average(self, *args, how, weight=0.5, **kwargs):
+    def average(self, *args, how='average', weight=0.5, **kwargs):
+        assert how == 'average'
         assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
         value = weight * self.leftvalue + (1-weight) * self.rightvalue
-        return self.transformation(*args, method='consolidate', how='average', weight=weight, **kwargs)(value)
+        return self.transformation(*args, method='consolidate', how=how, weight=weight, **kwargs)(value)
     
     @consolidate.register('cumulate')
-    def cumulate(self, *args, how, direction, **kwargs):
+    def cumulate(self, *args, how='cumulate', direction, **kwargs):
+        assert how == 'cumulate'
         assert direction == self.spec.direction(self.value)
         assert direction == 'lower' or direction == 'upper'
         value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
-        return self.transformation(*args, method='consolidate', how='cumulate', direction=direction, **kwargs)(value)
+        return self.transformation(*args, method='consolidate', how=how, direction=direction, **kwargs)(value)
     
     @consolidate.register('differential')
-    def differential(self, *args, how, **kwargs):
-        return self.transformation(*args, method='consolidate', how='differential', **kwargs)(self.rightvalue - self.leftvalue)    
+    def differential(self, *args, how='differential', **kwargs):
+        assert how == 'differential'
+        return self.transformation(*args, method='consolidate', how=how, **kwargs)(self.rightvalue - self.leftvalue)    
     
 
     
