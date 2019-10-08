@@ -39,11 +39,8 @@ class Variables(ODict):
     def name(self): return self.__name
     def __str__(self): 
         namestr = self.__class__.__name__ if not self.__name else ' '.join([self.__name, self.__class__.__name__])
-        content = {}
-        for key, value in self.items():
-            try: content[value.name()] = {k:str(v) for k, v in value.spec.todict().items()}
-            except: content[value.name()] = {}
-        jsonstr = json.dumps(content, sort_keys=True, indent=3, separators=(',', ' : '))                
+        content = {value.name():(value.spec.todict() if hasattr(value, 'spec') else {}) for value in self.values()}
+        jsonstr = json.dumps(content, sort_keys=False, indent=3, separators=(',', ' : '), default=str)                
         return ' '.join([namestr, jsonstr]) 
     
     def copy(self): return self.__class__([(key, value) for key, value in self.items()], name=self.__name)
