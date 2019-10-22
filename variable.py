@@ -104,10 +104,6 @@ class CustomVariable(Variable):
         if cls == CustomVariable: raise VariableNotCreatedError()
         if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
         return super().__new__(cls)
-    
-    def __init__(self, value):
-        self.spec.checkval(value)
-        super().__init__(value)
         
     @classmethod
     def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))  

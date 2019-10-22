@@ -39,7 +39,7 @@ class Variables(ODict):
     def name(self): return self.__name
     def __str__(self): 
         namestr = self.__class__.__name__ if not self.__name else ' '.join([self.__name, self.__class__.__name__])
-        content = {value.name():(value.spec.todict() if hasattr(value, 'spec') else {}) for value in self.values()}
+        content = {'{} ({})'.format(key, value.name()):(value.spec.todict() if hasattr(value, 'spec') else {}) for key, value in self.items()}
         jsonstr = json.dumps(content, sort_keys=False, indent=3, separators=(',', ' : '), default=str)                
         return ' '.join([namestr, jsonstr]) 
     
