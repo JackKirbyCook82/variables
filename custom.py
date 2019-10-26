@@ -30,7 +30,7 @@ class Category:
     
     # OPERATIONS
     def add(self, other, *args, **kwargs): 
-        if any([item in self.values for item in other.values]): raise VariableOverlapError(self, other, 'add')
+        if any([item in self.value for item in other.value]): raise VariableOverlapError(self, other, 'add')
         return self.operation(other.__class__, *args, method='add', **kwargs)({*self.value, *other.value}) 
 
     def subtract(self, other, *args, **kwargs): 

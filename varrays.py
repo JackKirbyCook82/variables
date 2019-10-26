@@ -56,9 +56,8 @@ def varray_dispatcher(mainfunc):
 
     def wrapper(varray, *args, **kwargs): 
         datatype = varray_datatype(varray)
-        func = _registry.get(datatype, mainfunc)
-        if datatype in _registry.keys(): return func(varray, *args, **kwargs)         
-        else: raise VariableMethodNotSupported(mainfunc, datatype)
+        try: return registry()[datatype](varray, *args, **kwargs)        
+        except KeyError: raise VariableMethodNotSupported(mainfunc, datatype)
 
     wrapper.register = register 
     wrapper.registry = registry
@@ -84,7 +83,7 @@ def _minimum(varray, *args, **kwargs): return reduce(lambda x, y: min(x, y), var
       
 @varray_dispatcher
 def maximum(varray, *args, **kwargs): pass
-@minimum.register('num', 'range', 'date', 'datetime')
+@maximum.register('num', 'range', 'date', 'datetime')
 def _maximum(varray, *args, **kwargs): return reduce(lambda x, y: max(x, y), varray)
 
 @varray_dispatcher
@@ -175,14 +174,14 @@ def _lower_cumulate(varray, *args, **kwargs):
 def upper_uncumulate(varray, *args, **kwargs): pass
 @upper_uncumulate.register('num', 'range')
 def _upper_uncumulate(varray, *args, **kwargs): 
-    function = lambda x: [x[0]] + [x - y for x, y in zip(x[1:], x[:-1])]
+    function = lambda x: [x[0]] + [x.subtract(y, *args, **kwargs) for x, y in zip(x[1:], x[:-1])]
     return function(varray[::-1])[::-1]
     
 @varray_dispatcher
 def lower_uncumulate(varray, *args, **kwargs): pass
 @lower_uncumulate.register('num', 'range')
 def _lower_uncumulate(varray, *args, **kwargs): 
-    function = lambda x: [x[0]] + [x - y for x, y in zip(x[1:], x[:-1])]
+    function = lambda x: [x[0]] + [x.subtract(y, *args, **kwargs) for x, y in zip(x[1:], x[:-1])]
     return function(varray)
 
 @varray_dispatcher
@@ -191,7 +190,7 @@ def moving_minimum(varray, *args, period, **kwargs): pass
 def _moving_minimum(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [minimum(varray[i:i+1+period]) for i in range(0, len(varray)-period)]
+    return [minimum(varray[i:i+1+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]
 
 @varray_dispatcher
 def moving_maximum(varray, *args, period, **kwargs): pass
@@ -199,7 +198,7 @@ def moving_maximum(varray, *args, period, **kwargs): pass
 def _moving_maximum(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [maximum(varray[i:i+1+period]) for i in range(0, len(varray)-period)]
+    return [maximum(varray[i:i+1+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]
 
 @varray_dispatcher
 def moving_average(varray, *args, period, **kwargs): pass
@@ -207,7 +206,7 @@ def moving_average(varray, *args, period, **kwargs): pass
 def _moving_average(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period 
-    return [mean(varray[i:i+1+period]) for i in range(0, len(varray)-period)]  
+    return [mean(varray[i:i+1+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]  
 
 @varray_dispatcher
 def moving_summation(varray, *args, period, **kwargs): pass
@@ -215,7 +214,7 @@ def moving_summation(varray, *args, period, **kwargs): pass
 def moving_summation(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [summation(varray[i:i+1+period]) for i in range(0, len(varray)-period)]  
+    return [summation(varray[i:i+1+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]  
 
 @varray_dispatcher
 def moving_differential(varray, *args, period, **kwargs): pass
@@ -236,7 +235,7 @@ def moving_couple(varray, *args, period, **kwargs): pass
 def _moving_couple(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
-    return [couple(varray[i:i+1+period]) for i in range(0, len(varray)-period)]   
+    return [couple(varray[i:i+1+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]   
 
 
     

@@ -43,6 +43,7 @@ class Geography:
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
     def items(self): return zip(self.value.keys(), self.value.values())
+    def asdict(self): return self.value
     
     def getkey(self, index): return list(self.value.keys())[index]    
     def getvalue(self, index): 
