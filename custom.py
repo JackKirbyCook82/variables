@@ -18,6 +18,12 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
+def within_threshold(value, other, threshold):
+    if value == other == None: return True
+    elif None in (value, other): return False
+    else: return abs(value - other) <= threshold
+
+
 @CustomVariable.register('category')
 class Category: 
     @samevariable
@@ -122,19 +128,19 @@ class Range:
     def __ge__(self, other): return self == other or self > other
     
     @keydispatcher('how')
-    def consolidate(self, *args, how, **kwargs): pass 
-    
+    def consolidate(self, *args, how, **kwargs): raise KeyError(how) 
+
     # OPERATIONS
     def add(self, other, *args, **kwargs):
-        if all([self.leftvalue == other.rightvalue, self.leftvalue is not None, other.rightvalue is not None]): value = [other.leftvalue, self.rightvalue]
-        elif all([self.rightvalue == other.leftvalue, self.rightvalue is not None, other.leftvalue is not None]): value = [self.leftvalue, other.rightvalue]
+        if all([within_threshold(self.leftvalue, other.rightvalue, self.spec.threshold), self.leftvalue is not None, other.rightvalue is not None]): value = [other.leftvalue, self.rightvalue]
+        elif all([within_threshold(self.rightvalue, other.leftvalue, self.spec.threshold), self.rightvalue is not None, other.leftvalue is not None]): value = [self.leftvalue, other.rightvalue]
         else: raise VariableOverlapError(self, other, 'add')
         return self.operation(other.__class__, *args, method='add', **kwargs)(value)
 
     def subtract(self, other, *args, **kwargs):
         if all([self.value.count(None) == 0, None not in other.value]):
-            if all([self.leftvalue == other.leftvalue, other.rightvalue < self.rightvalue]): value = [other.rightvalue, self.rightvalue]
-            elif all([self.rightvalue == other.rightvalue, other.leftvalue > self.leftvalue]): value = [self.leftvalue, other.leftvalue]
+            if all([within_threshold(self.leftvalue, other.leftvalue, self.spec.threshold), other.rightvalue < self.rightvalue]): value = [other.rightvalue, self.rightvalue]
+            elif all([within_threshold(self.rightvalue, other.rightvalue, self.spec.threshold), other.leftvalue > self.leftvalue]): value = [self.leftvalue, other.leftvalue]
             else: raise ValueError(self.value)            
         elif all([self.value.count(None) == 1, other.value.count(None) <= 1]):
             value = self.value.copy()
@@ -168,11 +174,14 @@ class Range:
 
     # TRANSFORMATIONS   
     @consolidate.register('average')
-    def average(self, *args, how='average', weight=0.5, **kwargs):
+    def average(self, *args, how='average', weight=0.5, bounds=[None, None], **kwargs):
         assert how == 'average'
         assert isinstance(weight, Number)
         assert all([weight <=1, weight >=0])
-        value = weight * self.leftvalue + (1-weight) * self.rightvalue
+        getvalue = lambda value, bound: value if value is not None else bound
+        value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]
+        assert None not in value
+        value = weight * value[0] + (1-weight) * value[-1]
         return self.transformation(*args, method='consolidate', how=how, weight=weight, **kwargs)(value)
     
     @consolidate.register('cumulate')
@@ -184,9 +193,11 @@ class Range:
         return self.transformation(*args, method='consolidate', how=how, direction=direction, **kwargs)(value)
     
     @consolidate.register('differential')
-    def differential(self, *args, how='differential', **kwargs):
+    def differential(self, *args, how='differential', bounds=[None, None], **kwargs):
         assert how == 'differential'
-        return self.transformation(*args, method='consolidate', how=how, **kwargs)(self.rightvalue - self.leftvalue)    
+        getvalue = lambda value, bound: value if value is not None else bound
+        value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]
+        return self.transformation(*args, method='consolidate', how=how, **kwargs)(value[-1] - value[0])    
     
 
     
