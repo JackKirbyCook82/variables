@@ -43,6 +43,10 @@ class Category:
         if any([item not in self.values for item in other.values]): raise VariableOverlapError(self, other, 'sub')
         return self.operation(other.__class__, *args, method='subtract', **kwargs)({value for value in self.values if value not in other.values})
 
+    def divide(self, other, *args, **kwargs): 
+        if other.value != self.spec.categories: raise VariableOverlapError(self, other, 'divide')
+        return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value)   
+
     def couple(self, other, *args, **kwargs):   
         return self.operation(other.__class__, *args, method='couple', **kwargs)(set([*self.value, *other.value]))   
 
