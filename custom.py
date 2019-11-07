@@ -48,7 +48,7 @@ class Category:
         return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value)   
 
     def couple(self, other, *args, **kwargs):   
-        return self.operation(other.__class__, *args, method='couple', **kwargs)(set([*self.value, *other.value]))   
+        return self.operation(other.__class__, *args, method='couple', **kwargs)({*self.value, *other.value})   
 
 
 @CustomVariable.register('num')
