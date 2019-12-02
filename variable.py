@@ -7,6 +7,7 @@ Created on Sun Jun 9 2019
 """
 
 from abc import ABC, abstractmethod
+import json
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
@@ -19,14 +20,14 @@ CUSTOM_VARIABLES = {}
 
 
 def create_customvariable(spec):
-    try: return CUSTOM_VARIABLES[spec.jsonstr]
+    try: return CUSTOM_VARIABLES[str(spec)]
     except:      
         base = CustomVariable.getsubclass(spec.datatype)
         name = '_'.join([spec.dataname, base.__name__])
         attrs = {'spec':spec}
         newvariable = type(name, (base,), attrs)
         print('Created: {}\n'.format(newvariable.name()))
-        CUSTOM_VARIABLES[spec.jsonstr] = newvariable
+        CUSTOM_VARIABLES[str(spec)] = newvariable
         return newvariable  
 
 def samevariable(function):
@@ -60,7 +61,9 @@ class Variable(ABC):
     
     @classmethod
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
-   
+    @classmethod
+    def jsonstr(cls): return json.dumps({})
+    
     def __add__(self, other): return self.add(other)
     def __sub__(self, other): return self.subtract(other)
     def __mul__(self, other): return self.multiply(other)
@@ -106,8 +109,11 @@ class CustomVariable(Variable):
         return super().__new__(cls)
         
     @classmethod
-    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))  
-
+    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
+    
+    @classmethod
+    def jsonstr(cls): return cls.spec.jsonstr()
+    
     def __str__(self): return self.spec.asstr(self.value)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)   
     
