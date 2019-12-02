@@ -59,6 +59,7 @@ class Geography:
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
 
     def get(self, key, default): return self.value.get(key, default)   
+    def cut(self, key): return self[slice(self.keys().index(key))]
     def __getitem__(self, key):
         if isinstance(key, str): return self.__class__({key:self.value[key]})
         elif isinstance(key, int): return self.__class__({self.getkey(key):self.getvalue(key)})
