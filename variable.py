@@ -62,12 +62,7 @@ class Variable(ABC):
     @classmethod
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
     @classmethod
-    def jsonstr(cls): return json.dumps({})
-    
-    def __add__(self, other): return self.add(other)
-    def __sub__(self, other): return self.subtract(other)
-    def __mul__(self, other): return self.multiply(other)
-    def __truediv__(self, other): return self.divide(other)    
+    def jsonstr(cls): return json.dumps({}) 
     
     # EQUALITY
     @samevariable
