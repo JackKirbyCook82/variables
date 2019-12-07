@@ -12,11 +12,12 @@ from collections import OrderedDict as ODict
 from variables.variable import Variable, CustomVariable, create_customvariable 
 from variables.date import Date, Datetime
 from variables.geography import Geography
+from variables.address import Address
 from variables.custom import *
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variables', 'Geography', 'Date', 'Datetime']
+__all__ = ['Variables', 'Geography', 'Address', 'Date', 'Datetime']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
