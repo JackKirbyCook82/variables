@@ -17,7 +17,7 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
-_ADDRESSATTRS = ('street' 'city' 'state' 'zipcode')
+_ADDRESSATTRS = ('street', 'city', 'state', 'zipcode')
 _ADDRESSFORMAT = '{street}, {city}, {state} {zipcode}'
 _AddressSgmts = ntuple('AddressSgmts', ' '.join(_ADDRESSATTRS))
 
