@@ -43,6 +43,8 @@ class Datetime:
     def setformat(self, dateformat): self.__dateformat = dateformat
     
     @classmethod
+    def fromnow(cls): return cls.frominstance(datetime.now())    
+    @classmethod
     def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype.lower()]}, **kwargs)    
     @classmethod
     def fromstr(cls, datestr, **kwargs): 
@@ -72,6 +74,8 @@ class Date:
     def dateformat(self): return self.__dateformat
     def setformat(self, dateformat): self.__dateformat = dateformat
     
+    @classmethod
+    def fromnow(cls): return cls.frominstance(datetime.now())    
     @classmethod
     def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in _DATEATTRS[cls.datatype.lower()]}, **kwargs)    
     @classmethod
