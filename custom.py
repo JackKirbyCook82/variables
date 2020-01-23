@@ -33,6 +33,8 @@ class Category:
     
     @samevariable
     def __contains__(self, other): return self.contains(other)
+    def __iter__(self): 
+        for item in self.value: yield item
     
     # OPERATIONS
     def add(self, other, *args, **kwargs): 
@@ -91,6 +93,11 @@ class Range:
     def leftvalue(self): return self.value[0]
     @property
     def rightvalue(self): return self.value[-1]
+    
+    @property
+    def lower(self): return self.value[0]
+    @property
+    def upper(self): return self.value[-1]
     
     @samevariable
     def contains(self, other): 
