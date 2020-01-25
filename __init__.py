@@ -61,8 +61,12 @@ class Variables(ODict):
     @classmethod
     def create(cls, name=None, **specs):
         custom_variables = [(key, create_customvariable(spec)) for key, spec in specs.items()]
-        variables = [(key, value) for key, value in Variable.subclasses().items()]
-        return cls(variables + custom_variables, name=name)   
+        return cls(custom_variables, name=name)   
+        
+    @classmethod
+    def load(cls, *variables, name=None):
+        variables = [Variable.subclasses()[variable] for variable in variables]
+        return cls(variables, name=name)   
     
     
     
