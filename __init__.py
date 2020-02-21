@@ -50,10 +50,7 @@ class Variables(ODict):
         assert isinstance(keys, list)
         return self.__class__([(key, self[key]) for key in keys], name=self.__name)
     def update(self, items): 
-        assert isinstance(items, list)
-        assert all([isinstance(item, tuple) for item in items])
-        assert all([len(item) == 2 for item in items])
-        items = ODict(items)
+        assert isinstance(items, dict)
         updated = [(key, items.get(key, value)) for key, value in self.items()]
         new = [(key, value) for key, value in items.items() if key not in self.keys()]
         return self.__class__(updated + new, name=self.__name)
@@ -65,7 +62,7 @@ class Variables(ODict):
         
     @classmethod
     def load(cls, *variables, name=None):
-        variables = [Variable.subclasses()[variable] for variable in variables]
+        variables = {variable:Variable.subclasses()[variable] for variable in variables}
         return cls(variables, name=name)   
     
     
