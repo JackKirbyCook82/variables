@@ -38,8 +38,10 @@ class Geography:
     def __geonum(self, key, value): return _GEOLENGTHS[key] * self.allID if self.__geotype(value) == 'all' else str(value).zfill(_GEOLENGTHS[key])
 
     def __init__(self, value): super().__init__(SODict([(str(key), str(value)) for key, value in value.items()]))
-    def __hash__(self): return hash(str(self))
-    
+    def __len__(self): return len(self.value)
+    def __str__(self): return self.delimiter.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
+       
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
     def items(self): return zip(self.value.keys(), self.value.values())
@@ -53,10 +55,6 @@ class Geography:
     
     @property
     def geoid(self): return ''.join([self.__geonum(key, value) for key, value in zip(self.keys(), self.values())])
-
-    def __len__(self): return len(self.value)
-    def __str__(self): return self.delimiter.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
 
     def get(self, key, default): return self.value.get(key, default)   
     def __getitem__(self, key):

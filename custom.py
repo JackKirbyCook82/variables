@@ -53,6 +53,22 @@ class Category:
         return self.operation(other.__class__, *args, method='couple', **kwargs)({*self.value, *other.value})   
 
 
+@CustomVariable.register('histogram')
+class Histogram:
+    def __getitem__(self, category): return self.value[category]
+    def __iter__(self):
+        for key, value in self.value.items(): yield key, value
+       
+    #OPERATIONS
+    def add(self, other, *args, **kwargs): 
+        value = {category:self.value[category] + other.value[category] for category in self.spec.categories} 
+        return self.operation(other.__class__, *args, method='add', **kwargs)(value) 
+
+    def subtract(self, other, *args, **kwargs): 
+        value = {category:self.value[category] - other.value[category] for category in self.spec.categories} 
+        return self.operation(other.__class__, *args, method='subtract', **kwargs)(value) 
+    
+
 @CustomVariable.register('num')
 class Num:
     @keydispatcher('how')

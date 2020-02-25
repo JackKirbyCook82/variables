@@ -17,13 +17,15 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
-_ADDRESSATTRS = ('street', 'city', 'state', 'zipcode')
+_ADDRESS = ('street', 'city', 'state', 'zipcode')
 _ADDRESSFORMAT = '{street}, {city}, {state} {zipcode}'
-_AddressSgmts = ntuple('AddressSgmts', ' '.join(_ADDRESSATTRS))
+_AddressSgmts = ntuple('AddressSgmts', ' '.join(_ADDRESS))
 
 
 @Variable.register('address')
 class Address: 
+    fields = _ADDRESS
+    
     def __getattr__(self, attr): return getattr(self.value, attr)  
     def __init__(self, street, city, state, zipcode): super().__init__(_AddressSgmts(street, city, state, zipcode))
     def __hash__(self): return hash(str(self))
