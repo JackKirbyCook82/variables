@@ -17,13 +17,13 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
+DELIMITER = '|'
+ALLCHAR = '*'
+
+
 @Variable.register('geopath')
 class Geopath: 
-    delimiter = '|'
-    allChar = '*'
-    allID = 'X'
-    
-    def __geotype(self, value): return 'all' if value == self.allChar else 'each'
+    def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
 
     def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))
     def __hash__(self): return hash(str(self))
@@ -40,7 +40,7 @@ class Geopath:
         else: raise TypeError(index)
 
     def __len__(self): return len(self.value)
-    def __str__(self): return self.delimiter.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
+    def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
 
     def get(self, key, default): return self.value.get(key, default)   
@@ -57,7 +57,7 @@ class Geopath:
 
     @classmethod
     def fromstr(cls, geostr, **kwargs):
-        return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(cls.delimiter)]))
+        return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(DELIMITER)]))
 
 
 

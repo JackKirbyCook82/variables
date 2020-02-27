@@ -11,23 +11,25 @@ import json
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variable', 'CustomVariable', 'create_customvariable', 'samevariable']
+__all__ = ['create_customvariable', 'Variable', 'CustomVariable']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
+VARIABLES = {}
 CUSTOM_VARIABLES = {}
+CUSTOM_VARIABLE_SUBCLASSES = {}
 
 
 def create_customvariable(spec):
-    try: return CUSTOM_VARIABLES[str(spec)]
+    try: return CUSTOM_VARIABLES[hash(spec)]
     except:      
-        base = CustomVariable.getsubclass(spec.datatype)
+        base = CustomVariable.subclasses[spec.datatype]
         name = '_'.join([spec.dataname, base.__name__])
         attrs = {'spec':spec}
         newvariable = type(name, (base,), attrs)
         print('Created: {}\n'.format(newvariable.name()))
-        CUSTOM_VARIABLES[str(spec)] = newvariable
+        CUSTOM_VARIABLES[hash(spec)] = newvariable
         return newvariable  
 
 def samevariable(function):
@@ -78,21 +80,11 @@ class Variable(ABC):
     @samevariable
     def __ge__(self, other): return self.value >= other.value
 
-
-    # REGISTER SUBCLASSES  
-    __subclasses = {}    
-    @classmethod
-    def subclasses(cls): return cls.__subclasses
-    @classmethod
-    def getsubclass(cls, datatype): return cls.__subclasses[datatype.lower()]     
-    
     @classmethod
     def register(cls, datatype):  
         def wrapper(subclass):
-            name = subclass.__name__
-            bases = (subclass, cls)
-            newsubclass = type(name, bases, dict(datatype=datatype.lower()))
-            Variable.__subclasses[datatype.lower()] = newsubclass
+            newsubclass = type(subclass.__name__, (subclass, cls), dict(datatype=datatype.lower()))
+            VARIABLES[datatype.lower()] = newsubclass
             return newsubclass
         return wrapper 
 
@@ -103,31 +95,19 @@ class CustomVariable(Variable):
         if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
         return super().__new__(cls)
         
+    def __str__(self): return self.spec.asstr(self.value)  
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)       
+    
+    @classmethod
+    def jsonstr(cls): return cls.spec.jsonstr()    
     @classmethod
     def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
     
     @classmethod
-    def jsonstr(cls): return cls.spec.jsonstr()
-    
-    def __str__(self): return self.spec.asstr(self.value)  
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)   
-    
-    # REGISTER SUBCLASSES  
-    __subclasses = {}      
-    @classmethod
-    def subclasses(cls): return cls.__subclasses  
-    @classmethod
-    def getsubclass(cls, datatype): return cls.__subclasses[datatype.lower()]
-    @classmethod
-    def custom_subclasses(cls): return list(CUSTOM_VARIABLES.values())
-    
-    @classmethod
     def register(cls, datatype):  
         def wrapper(subclass):
-            name = subclass.__name__
-            bases = (subclass, cls)
-            newsubclass = type(name, bases, dict(datatype=datatype.lower()))
-            CustomVariable.__subclasses[datatype.lower()] = newsubclass
+            newsubclass = type(subclass.__name__, (subclass, cls), dict(datatype=datatype.lower()))
+            CUSTOM_VARIABLE_SUBCLASSES[datatype.lower()] = newsubclass
             return newsubclass
         return wrapper  
     

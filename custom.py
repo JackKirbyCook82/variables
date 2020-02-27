@@ -13,7 +13,7 @@ from variables.variable import CustomVariable, VariableOverlapError, samevariabl
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Category', 'Num', 'Range']
+__all__ = ['Category', 'Histogram', 'Num', 'Range']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -39,18 +39,21 @@ class Category:
     # OPERATIONS
     def add(self, other, *args, **kwargs): 
         if any([item in self.value for item in other.value]): raise VariableOverlapError(self, other, 'add')
-        return self.operation(other.__class__, *args, method='add', **kwargs)({*self.value, *other.value}) 
-
+        value = {*self.value, *other.value}
+        return self.operation(other.__class__, *args, method='add', **kwargs)(value) 
     def subtract(self, other, *args, **kwargs): 
         if any([item not in self.values for item in other.values]): raise VariableOverlapError(self, other, 'sub')
-        return self.operation(other.__class__, *args, method='subtract', **kwargs)({value for value in self.values if value not in other.values})
+        value = {value for value in self.values if value not in other.values}
+        return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def divide(self, other, *args, **kwargs): 
         if other.value != self.spec.categories: raise VariableOverlapError(self, other, 'divide')
-        return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value)   
+        value = self.value
+        return self.operation(other.__class__, *args, method='divide', **kwargs)(value)   
 
     def couple(self, other, *args, **kwargs):   
-        return self.operation(other.__class__, *args, method='couple', **kwargs)({*self.value, *other.value})   
+        value = {*self.value, *other.value}
+        return self.operation(other.__class__, *args, method='couple', **kwargs)(value)   
 
 
 @CustomVariable.register('histogram')
@@ -63,42 +66,36 @@ class Histogram:
     def add(self, other, *args, **kwargs): 
         value = {category:self.value[category] + other.value[category] for category in self.spec.categories} 
         return self.operation(other.__class__, *args, method='add', **kwargs)(value) 
-
     def subtract(self, other, *args, **kwargs): 
         value = {category:self.value[category] - other.value[category] for category in self.spec.categories} 
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value) 
     
 
 @CustomVariable.register('num')
-class Num:
-    @keydispatcher('how')
-    def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)    
-    
-    # OPERATIONS
+class Num:    
+    # OPERATIONS & TRANSFORMATIONS        
     def add(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='add', **kwargs)(self.value + other.value)   
     def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
     
     def multiply(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.transformation(*args, method='factor', how='multiply', factor=other, **kwargs)(self.value * other)    
         elif isinstance(other, Num): return self.operation(other.__class__, *args, method='multiply', **kwargs)(self.value * other.value)
-        else: raise TypeError(type(other))
-    
+        else: raise TypeError(type(other))    
     def divide(self, other, *args, **kwargs): 
         if isinstance(other, Number): return self.transformation(*args, method='factor', how='divide', factor=other, **kwargs)(self.value / other)    
         elif isinstance(other, Num): return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
         else: raise TypeError(type(other))
 
+    @keydispatcher('how')
+    def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)    
     @unconsolidate.register('couple')
     def couple(self, other, *args, how='couple', **kwargs):
         assert how == 'couple'
-        return self.operation(other.__class__, *args, method='unconsolidate', how=how, **kwargs)([min(self.value, other.value), max(self.value, other.value)])
-
-    # TRANSFORMATIONS
+        value = [min(self.value, other.value), max(self.value, other.value)]
+        return self.operation(other.__class__, *args, method='unconsolidate', how=how, **kwargs)(value)
     @unconsolidate.register('uncumulate')
     def uncumulate(self, *args, how='uncumulate', direction, **kwargs):
-        assert how == 'uncumulate'
-        assert direction == 'lower' or direction == 'upper'
-        assert direction == self.numdirection
+        assert all([how == 'uncumulate', direction == 'lower' or direction == 'upper', direction == self.numdirection])
         value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
         return self.transformation(*args, method='unconsolidate', how=how, direction=direction, **kwargs)(value)    
 
@@ -121,8 +118,7 @@ class Range:
         except: left = self.leftvalue is None
         try: right = self.rightvalue >= other.rightvalue
         except: right = self.rightvalue is None
-        return left and right      
-    
+        return left and right          
     @samevariable
     def overlaps(self, other):
         try: left = not self.leftvalue >= other.rightvalue
@@ -137,8 +133,7 @@ class Range:
         except TypeError: left = self.leftvalue is None and other.leftvalue is not None
         try: right = self.rightvalue < other.rightvalue
         except TypeError: right = self.rightvalue is not None and other.rightvalue is None
-        return left and right    
-    
+        return left and right        
     @samevariable
     def __gt__(self, other):
         try: left = self.leftvalue > other.leftvalue
@@ -154,16 +149,13 @@ class Range:
     @samevariable
     def __ge__(self, other): return self == other or self > other
     
-    @keydispatcher('how')
-    def consolidate(self, *args, how, **kwargs): raise KeyError(how) 
-
-    # OPERATIONS
+    # OPERATIONS & TRANSFORMATIONS    
     def add(self, other, *args, **kwargs):
         if all([within_threshold(self.leftvalue, other.rightvalue, self.spec.threshold), self.leftvalue is not None, other.rightvalue is not None]): value = [other.leftvalue, self.rightvalue]
         elif all([within_threshold(self.rightvalue, other.leftvalue, self.spec.threshold), self.rightvalue is not None, other.leftvalue is not None]): value = [self.leftvalue, other.rightvalue]
         else: raise VariableOverlapError(self, other, 'add')
         return self.operation(other.__class__, *args, method='add', **kwargs)(value)
-
+    
     def subtract(self, other, *args, **kwargs):
         if all([self.value.count(None) == 0, None not in other.value]):
             if all([within_threshold(self.leftvalue, other.leftvalue, self.spec.threshold), other.rightvalue < self.rightvalue]): value = [other.rightvalue, self.rightvalue]
@@ -199,12 +191,12 @@ class Range:
         except TypeError: rightvalue = None
         return self.operation(other.__class__, *args, method='couple', **kwargs)([leftvalue, rightvalue])     
 
-    # TRANSFORMATIONS   
+    @keydispatcher('how')
+    def consolidate(self, *args, how, **kwargs): raise KeyError(how) 
+    
     @consolidate.register('average')
     def average(self, *args, how='average', weight=0.5, bounds=[None, None], **kwargs):
-        assert how == 'average'
-        assert isinstance(weight, Number)
-        assert all([weight <=1, weight >=0])
+        assert all([how == 'average', isinstance(weight, Number), weight<=1, weight>=0])
         getvalue = lambda value, bound: value if value is not None else bound
         value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]
         assert None not in value
@@ -213,9 +205,7 @@ class Range:
     
     @consolidate.register('cumulate')
     def cumulate(self, *args, how='cumulate', direction, **kwargs):
-        assert how == 'cumulate'
-        assert direction == self.spec.direction(self.value)
-        assert direction == 'lower' or direction == 'upper'
+        assert all([how == 'cumulate', direction == self.spec.direction(self.value), direction == 'lower' or direction == 'upper'])
         value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
         return self.transformation(*args, method='consolidate', how=how, direction=direction, **kwargs)(value)
     

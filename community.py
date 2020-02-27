@@ -6,6 +6,8 @@ Created on Mon Feb 24 2020
 
 """
 
+from collections import namedtuple as ntuple
+
 from specs import HistogramSpec
 
 from variables.variable import Variable, create_customvariable
@@ -24,34 +26,17 @@ Race_Histogram = create_customvariable(HistogramSpec(data='race', categories=['W
 Education_Histogram = create_customvariable(HistogramSpec(data='education', categories=['Uneducated', 'GradeSchool', 'Associates', 'Bachelors', 'Graduate']))
 LifeStage_Histogram = create_customvariable(HistogramSpec(data='lifestage', categories=['Baby', 'Toddler', 'Child', 'Teenager', 'YoungAdult', 'MidLife', 'Mature', 'Elder']))
 
-_COMMUNITY = {'race':Race_Histogram, 'education':Education_Histogram, 'lifestage':LifeStage_Histogram}
+COMMUNITY = {'race':Race_Histogram, 'education':Education_Histogram, 'lifestage':LifeStage_Histogram}
+DELIMITER = '|'
+SEPARATOR = '&'
+CommunitySgmts = ntuple('CommunitySgmts', ' '.join(list(COMMUNITY.keys())))
 
 
-@Variable.register('community')
-class Community:
-    fields = tuple(_COMMUNITY.keys())
-    delimiter = '&'    
-    
-    def __init__(self, **kwargs): super().__init__([kwargs[attr] if attr in kwargs.keys() else None for attr in self.fields.keys()])
-    def __getattr__(self, attr): return self.value[list(self.fields.keys()).index(attr)]
-    def __getitem__(self, attr): return self.value[list(self.fields.keys()).index(attr)]
-    
-    def __len__(self): return len(_filterempty(self.value))
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['{}={}'.format(attr, repr(item)) for attr, item in self.items()]))
-    def __str__(self): return self.delimiter.join([str(item) if item is not None else '' for item in self.value])
-    
-    def items(self): return zip(self.fields.keys(), self.value)
-    def asdict(self): return {key:value for key, value in self.items()}
-    
-    @classmethod
-    def fromstr(cls, communitystr, **kwargs): 
-        communitystrs = communitystr.split(cls.delimiter)
-        return cls({attr:variable.fromstr(communitystrs[i]) for i, (attr, variable) in enumerate(cls.fields.items()) if communitystrs[i]})
+@Variable.register('community')    
+class Community: 
+    fields = tuple(COMMUNITY.keys())
+        
 
-        
-        
-     
-        
         
         
         

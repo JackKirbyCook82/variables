@@ -20,26 +20,27 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
+DELIMITER = '|'
+ALLCHAR = '*'
+ALLID = 'X'
+
+
 _DIR = os.path.dirname(os.path.realpath(__file__))
 _GEOFILENAME = 'geography.csv'
 
 with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
     reader = csv.reader(infile)    
-    _GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
+    GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
 
 
 @Variable.register('geography')
 class Geography: 
-    delimiter = '|'
-    allChar = '*'
-    allID = 'X'
-    
-    def __geotype(self, value): return 'all' if value == self.allChar else 'each'
-    def __geonum(self, key, value): return _GEOLENGTHS[key] * self.allID if self.__geotype(value) == 'all' else str(value).zfill(_GEOLENGTHS[key])
+    def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
+    def __geonum(self, key, value): return GEOLENGTHS[key] * ALLID if self.__geotype(value) == 'all' else str(value).zfill(GEOLENGTHS[key])
 
     def __init__(self, value): super().__init__(SODict([(str(key), str(value)) for key, value in value.items()]))
     def __len__(self): return len(self.value)
-    def __str__(self): return self.delimiter.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
+    def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
        
     def keys(self): return list(self.value.keys())
@@ -76,18 +77,18 @@ class Geography:
     def __add__(self, other): return self.add(other)
     def add(self, other, *args, **kwargs):
         assert self[:-1] == other[:-1]
-        return self.__class__(SODict([(key, value) if key != self.getkey(-1) else (key, self.allChar) for key, value in self.items()]))
+        return self.__class__(SODict([(key, value) if key != self.getkey(-1) else (key, ALLCHAR) for key, value in self.items()]))
 
     def __contains__(self, other): return self.contains(other)
     def contains(self, other):
         for i in range(len(self)):
             if self.getkey(i) != other.getkey(i): return False
-            if self.getvalue(i) != self.allChar and self.getvalue(i) != other.getvalue(i): return False
+            if self.getvalue(i) != ALLCHAR and self.getvalue(i) != other.getvalue(i): return False
         return True
         
     @classmethod
     def fromstr(cls, geostr, **kwargs):
-        return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(cls.delimiter)]))
+        return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(DELIMITER)]))
 
 
 

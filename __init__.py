@@ -9,16 +9,21 @@ Created on Fri Jun 7 2019
 import json
 from collections import OrderedDict as ODict
 
-from variables.variable import Variable, CustomVariable, create_customvariable 
-from variables.date import Date, Datetime
-from variables.geography import Geography
-from variables.geopath import Geopath
-from variables.address import Address
-from variables.custom import *
+from variables.variable import VARIABLES, CUSTOM_VARIABLES, create_customvariable 
+from variables.address import *
+from variables.community import *
+from variables.crime import *
+from variables.date import *
+from variables.geography import *
+from variables.geopath import *
+from variables.proximity import *
+from variables.quality import *
+from variables.school import *
+from variables.space import *
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Variables', 'Geography', 'Geopath', 'Address', 'Date', 'Datetime']
+__all__ = ['Variables']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -62,7 +67,7 @@ class Variables(ODict):
         
     @classmethod
     def load(cls, *variables, name=None):
-        variables = {variable:Variable.subclasses()[variable] for variable in variables}
+        variables = [(variable, VARIABLES[variable]) for variable in variables]
         return cls(variables, name=name)   
     
     

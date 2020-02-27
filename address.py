@@ -17,28 +17,27 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
-_ADDRESS = ('street', 'city', 'state', 'zipcode')
-_ADDRESSFORMAT = '{street}, {city}, {state} {zipcode}'
-_AddressSgmts = ntuple('AddressSgmts', ' '.join(_ADDRESS))
+ADDRESS = ('street', 'city', 'state', 'zipcode')
+ADDRESSFORMAT = '{street}, {city}, {state} {zipcode}'
+AddressSgmts = ntuple('AddressSgmts', ' '.join(ADDRESS))
 
 
 @Variable.register('address')
 class Address: 
-    fields = _ADDRESS
-    
-    def __getattr__(self, attr): return getattr(self.value, attr)  
-    def __init__(self, street, city, state, zipcode): super().__init__(_AddressSgmts(street, city, state, zipcode))
-    def __hash__(self): return hash(str(self))
-    
-    def __str__(self): return _ADDRESSFORMAT.format(**self.todict())
+    fields = ADDRESS
+        
+    def __init__(self, **kwargs): super().__init__(AddressSgmts({field:kwargs[field] for field in self.fields}))
+    def __hash__(self): return hash(str(self))    
+    def __len__(self): return len(self.value)
+    def __str__(self): return ADDRESSFORMAT.format(**self.todict())
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items()]))
     
     def keys(self): return list(self.value.todict().keys())
     def values(self): return list(self.value.todict().values())
     def todict(self): return self.value._asdict()
     
-    def get(self, key, default): return self.value.todict().get(key, default)   
     def __getitem__(self, key): return self.value.todict()[key]
+    def __getattr__(self, attr): return getattr(self.value, attr)  
 
     def __lt__(self, other): return str(self) < str(other)
     def __le__(self, other): return str(self) <= str(other)
