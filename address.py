@@ -26,8 +26,7 @@ AddressSgmts = ntuple('AddressSgmts', ' '.join(ADDRESS))
 class Address: 
     fields = ADDRESS
         
-    def __init__(self, **kwargs): super().__init__(AddressSgmts({field:kwargs[field] for field in self.fields}))
-    def __hash__(self): return hash(str(self))    
+    def __init__(self, **kwargs): super().__init__(AddressSgmts({field:kwargs[field] for field in self.fields})) 
     def __len__(self): return len(self.value)
     def __str__(self): return ADDRESSFORMAT.format(**self.todict())
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items()]))

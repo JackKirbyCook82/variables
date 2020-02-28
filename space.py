@@ -30,7 +30,6 @@ class Space:
     fields = SPACE
         
     def __init__(self, **kwargs): super().__init__(SpaceSgmts({field:int(kwargs[field]) if field in kwargs.keys() else None for field in self.fields}))
-    def __hash__(self): return hash(str(self))
     def __len__(self): return len(_filterempty(self.value))
     def __str__(self): return DELIMITER.join(['{}={}'.format(key, str(value)) for key, value in self.items() if value is not None])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items() if value is not None]))

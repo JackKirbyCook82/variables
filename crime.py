@@ -27,7 +27,6 @@ class Crime:
     fields = CRIME
         
     def __init__(self, **kwargs): super().__init__(CrimeSgmts({field:int(kwargs.get(field, 0)) for field in self.fields}))
-    def __hash__(self): return hash(str(self))
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{}={}'.format(key, str(value)) for key, value in self.items() if value > 0])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items()]))
