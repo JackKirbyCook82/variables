@@ -10,16 +10,9 @@ import json
 from collections import OrderedDict as ODict
 
 from variables.variable import VARIABLES, CUSTOM_VARIABLES, create_customvariable 
-from variables.address import *
-from variables.community import *
-from variables.crime import *
 from variables.date import *
 from variables.geography import *
-from variables.geopath import *
-from variables.proximity import *
-from variables.quality import *
-from variables.school import *
-from variables.space import *
+from variables.fields import *
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
