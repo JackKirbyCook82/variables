@@ -5,6 +5,7 @@ Created on Sun Jun 9 2019
 @author: Jack Kirby Cook
 """
 
+import numpy as np
 from numbers import Number
 
 from utilities.dispatchers import keyword_singledispatcher as keydispatcher
@@ -58,11 +59,13 @@ class Category:
 
 @CustomVariable.register('histogram')
 class Histogram:
+    @property
+    def total(self): return np.sum(np.array([self.value[category] for category in self.categories]))
     def __getitem__(self, category): return self.value[category]
     def __iter__(self):
         for key, value in self.value.items(): yield key, value
-       
-    #OPERATIONS
+
+    # OPERATIONS & TRANSFORMATIONS
     def add(self, other, *args, **kwargs): 
         value = {category:self.value[category] + other.value[category] for category in self.spec.categories} 
         return self.operation(other.__class__, *args, method='add', **kwargs)(value) 
@@ -70,6 +73,10 @@ class Histogram:
         value = {category:self.value[category] - other.value[category] for category in self.spec.categories} 
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value) 
     
+    def normalize(self): 
+        value = {category:self.value[category]/self.total for category in self.categories}
+        return self.transformation(method='scale', how='normalize', axis=None)(value)  
+
 
 @CustomVariable.register('num')
 class Num:    
