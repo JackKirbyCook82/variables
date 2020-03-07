@@ -39,9 +39,9 @@ LanguageHistogram = create_customvariable(HistogramSpec(data='language', categor
 EnglishHistogram = create_customvariable(HistogramSpec(data='english', categories=['Fluent', 'Well', 'Poor', 'Inable']))
 ChildrenHistogram = create_customvariable(HistogramSpec(data='children', categories=['W/OChildren', 'WChildren']))
 AgeHistogram = create_customvariable(HistogramSpec(data='age', categories=rangeparser('{} YRS|range|15-55/10&60&65-85/10|cut=lower&shift=upper'), 
-                                                   function=lambda x, *args, bounds=[0, None], **kwargs: AgeRange.average(bounds=bounds).fromstr(x).value))
+                                                   function=lambda x, *args, bounds, **kwargs: AgeRange.average(bounds=bounds).fromstr(x).value))
 CommuteHistogram = create_customvariable(HistogramSpec(data='commute', categories=rangeparser('{} MINS|range|5-45/5&60&90|shift=upper'), 
-                                                       function=lambda x, *args, bounds=[0, None], **kwargs: CommuteRange.average(bounds=bounds).fromstr(x).value))
+                                                       function=lambda x, *args, bounds, **kwargs: CommuteRange.average(bounds=bounds).fromstr(x).value))
 
 CRIME = ('shooting', 'arson', 'burglary', 'assault', 'vandalism', 'robbery', 'arrest', 'other', 'theft')
 SCHOOL = ('graduation_rate', 'reading_rate', 'math_rate', 'ap_enrollment', 'avgsat_score', 'avgact_score', 'student_density', 'inexperience_ratio')
