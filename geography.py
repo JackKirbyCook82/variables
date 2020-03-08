@@ -58,7 +58,7 @@ class Geography:
         else: raise TypeError(index)
     
     @property
-    def geoid(self): return ''.join([self.__geonum(key, value) for key, value in zip(self.keys(), self.values())])
+    def geoID(self): return ''.join([self.__geonum(key, value) for key, value in zip(self.keys(), self.values())])
 
     def get(self, key, default): return self.value.get(key, default)   
     def __getitem__(self, key):

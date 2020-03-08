@@ -46,12 +46,14 @@ CommuteHistogram = create_customvariable(HistogramSpec(data='commute', categorie
 CRIME = ('shooting', 'arson', 'burglary', 'assault', 'vandalism', 'robbery', 'arrest', 'other', 'theft')
 SCHOOL = ('graduation_rate', 'reading_rate', 'math_rate', 'ap_enrollment', 'avgsat_score', 'avgact_score', 'student_density', 'inexperience_ratio')
 SPACE = ('sqft', 'bedrooms', 'rooms')
+QUALITY = ('yearbuilt')
 PROXIMITY = {'commute':CommuteHistogram}
 COMMUNITY = {'race':RaceHistogram, 'origin':OriginHistogram, 'education':EducationHistogram, 'language':LanguageHistogram, 'english':EnglishHistogram, 'age':AgeHistogram, 'children':ChildrenHistogram}
 
 CrimeSgmts = ntuple('CrimeSgmts', ' '.join(CRIME))
 SchoolSgmts = ntuple('SchoolSgmts', ' '.join(SCHOOL))
 SpaceSgmts = ntuple('SpaceSgmts', ' '.join(SPACE))
+QualitySgmts = ntuple('QualitySgmts', ' '.join(QUALITY))
 ProximitySgmts = ntuple('ProximitySgmts', ' '.join(list(PROXIMITY.keys())))
 CommunitySgmts = ntuple('CommunitySgmts', ' '.join(list(COMMUNITY.keys())))
 
@@ -108,20 +110,23 @@ class Crime:
     def __init__(self, **kwargs): 
         super().__init__(CrimeSgmts({field:int(kwargs.get(field, 0)) for field in self.fields}))
 
-    
 @Field.register('school')    
 class School: 
     fields = SCHOOL        
     def __init__(self, **kwargs): 
         super().__init__(SchoolSgmts({field:int(kwargs[field]) if field in kwargs.keys() else None for field in self.fields}))
 
-
 @Field.register('space')    
 class Space: 
     fields = SPACE        
     def __init__(self, **kwargs): 
         super().__init__(SpaceSgmts({field:int(kwargs[field]) for field in self.fields}))
-    
+  
+@Field.register('quality')
+class Quality: 
+    fields = QUALITY        
+    def __init__(self, **kwargs): 
+        super().__init__(QualitySgmts({field:int(kwargs[field]) for field in self.fields}))
 
 @HistField.register('proximity')    
 class Proximity: 
@@ -130,7 +135,6 @@ class Proximity:
         assert all([isinstance(kwargs[field], variable) for field, variable in self.fields.items()])
         super().__init__(ProximitySgmts({field:kwargs[field] for field in self.fields}))
     
-
 @HistField.register('community')    
 class Community: 
     fields = COMMUNITY       
