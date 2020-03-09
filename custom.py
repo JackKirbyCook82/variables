@@ -29,12 +29,13 @@ def within_threshold(value, other, threshold):
 @CustomVariable.register('category')
 class Category: 
     @samevariable
-    def contains(self, other): return all([item in self.values for item in other.values])
+    def contains(self, other): return all([item in self.value for item in other.value])
     @samevariable
-    def overlaps(self, other): return any([item in self.values for item in other.values])
+    def overlaps(self, other): return any([item in self.value for item in other.value])
     
     @samevariable
     def __contains__(self, other): return self.contains(other)
+    def __hash__(self): return hash((self.__class__.__name__, self.value,))
     def __iter__(self): 
         for item in self.value: yield item
     
@@ -62,6 +63,7 @@ class Category:
 class Histogram:
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
+    def __hash__(self): return hash((self.__class__.__name__, *self.value.values,))
 
     def categoryvector(self, *args, **kwargs): return list(self.spec.category)
     def indexvector(self, *args, **kwargs): return np.array(list(self.indexes))
@@ -102,6 +104,8 @@ class Histogram:
 
 @CustomVariable.register('num')
 class Num:    
+    def __hash__(self): return hash((self.__class__.__name__, self.value,))
+    
     # OPERATIONS & TRANSFORMATIONS        
     def add(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='add', **kwargs)(self.value + other.value)   
     def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
@@ -131,6 +135,8 @@ class Num:
 
 @CustomVariable.register('range')
 class Range:  
+    def __hash__(self): return hash((self.__class__.__name__, self.value[0], self.value[-1],))
+    
     @property
     def leftvalue(self): return self.value[0]
     @property

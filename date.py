@@ -39,6 +39,7 @@ class Datetime:
     def __str__(self): return self.strftime(self.dateformat)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
+    def __hash__(self): return hash(self.value)
     
     @property
     def timestamp(self): return int(time.mktime(self.timetuple()))     
@@ -84,6 +85,7 @@ class Date:
     def __str__(self): return self.strftime(self.dateformat)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
+    def __hash__(self): return hash(self.value)
     
     @property
     def dateformat(self): return self.__dateformat
@@ -133,6 +135,7 @@ class Timedelta:
     def __str__(self): return TIMEDELTAFORMAT.format(**split_seconds(self.total_seconds())).lstrip()
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
+    def __hash__(self): return hash(self.value)
    
     def __add__(self, other):
         assert isinstance(other, type(self))

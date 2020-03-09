@@ -76,6 +76,7 @@ class Field:
     def __len__(self): return len(_filterempty(self.value))
     def __getitem__(self, key): return self.value.todict()[key]
     def __getattr__(self, attr): return getattr(self.value, attr)     
+    def __hash__(self): return hash((self.__class__.__name__, *self.value,))
     
     @classmethod
     def fromstr(cls, string, **kwargs):
@@ -96,7 +97,8 @@ class HistField:
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{}={}'.format(key, repr(value)) for key, value in self.todict().items()]))
     def __len__(self): return len(_filterempty(self.value))
     def __getitem__(self, key): return self.value.todict()[key]
-    def __getattr__(self, attr): return getattr(self.value, attr)     
+    def __getattr__(self, attr): return getattr(self.value, attr)    
+    def __hash__(self): return hash((self.__class__.__name__, *[hash(histogram) for histogram in self.value],))
  
     @classmethod
     def fromstr(cls, string, **kwargs): 

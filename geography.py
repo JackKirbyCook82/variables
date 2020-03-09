@@ -45,7 +45,8 @@ class Geography:
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
-       
+    def __hash__(self): return hash((self.__class__.__name__, self.geoID,))   
+    
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
     def items(self): return zip(self.value.keys(), self.value.values())
@@ -99,7 +100,10 @@ class Geopath:
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
 
     def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))
-    def __hash__(self): return hash(str(self))
+    def __len__(self): return len(self.value)
+    def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
+    def __hash__(self): return hash((self.__class__.__name__, tuple(self.keys), tuple(self.values),))  
     
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
@@ -110,11 +114,7 @@ class Geopath:
     def getvalue(self, index): 
         if isinstance(index, int): return list(self.value.values())[index]  
         elif isinstance(index, str): return self.value[index]
-        else: raise TypeError(index)
-
-    def __len__(self): return len(self.value)
-    def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
+        else: raise TypeError(index) 
 
     def get(self, key, default): return self.value.get(key, default)   
     def __getitem__(self, key):
@@ -141,6 +141,7 @@ class Address:
     def __len__(self): return len(self.value)
     def __str__(self): return ADDRESSFORMAT.format(**self.todict())
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items()]))
+    def __hash__(self): return hash((self.__class__.__name__, *self.value,))  
     
     def keys(self): return list(self.value.todict().keys())
     def values(self): return list(self.value.todict().values())
