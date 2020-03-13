@@ -91,12 +91,12 @@ class Date:
     def dateformat(self): return self.__dateformat
     def setformat(self, dateformat): self.__dateformat = dateformat
     
-    def __add__(self, other):
-        assert isinstance(other, Timedelta)
-        return self.frominstance(self.value + other.value)
-    def __sub__(self, other):
-        assert isinstance(other, Timedelta)
-        return self.frominstance(self.value - other.value)
+    def add(self, *args, years=0, months=0, days=0, **kwargs):
+        value = self.value + timedelta(days + (months/12) * 365 + years * 365)
+        return self.frominstance(value, *args, **kwargs) 
+    def sub(self, *args, years, months, days, **kwargs):
+        value = self.value - timedelta(days + (months/12) * 365 + years * 365)
+        return self.frominstance(value, *args, **kwargs) 
     
     @classmethod
     def fromnow(cls): return cls.frominstance(datetime.now())    
