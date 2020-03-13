@@ -38,8 +38,8 @@ class Category:
     def __hash__(self): return hash((self.__class__.__name__, self.value,))
     def __iter__(self): 
         for item in self.value: yield item
-    
-    # OPERATIONS
+
+    # OPERATIONS & TRANSFORMATIONS
     def add(self, other, *args, **kwargs): 
         if any([item in self.value for item in other.value]): raise VariableOverlapError(self, other, 'add')
         value = {*self.value, *other.value}
@@ -73,6 +73,7 @@ class Histogram:
     def array(self, *args, **kwargs): 
         return np.array([np.full(weight, value) for value, weight in zip(np.nditer(self.valuevector(*args, **kwargs), np.nditer(self.weightvector(*args, **kwargs))))]).flatten()
     
+    def sample(self): return np.random.choice(self.categoryvector(), 1, p=self.weightvector())  
     def total(self, *args, **kwargs): return np.sum(self.array(*args, **kwargs))
     def mean(self, *args, **kwargs): return np.mean(self.array(*args, **kwargs))
     def median(self, *args, **kwargs): return np.median(self.array(*args, **kwargs))

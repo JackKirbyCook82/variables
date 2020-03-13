@@ -16,7 +16,7 @@ from variables.variable import Variable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Geography']
+__all__ = ['Geography', 'Geopath']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -41,7 +41,7 @@ class Geography:
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
     def __geonum(self, key, value): return GEOLENGTHS[key] * ALLID if self.__geotype(value) == 'all' else str(value).zfill(GEOLENGTHS[key])
 
-    def __init__(self, value): super().__init__(SODict([(str(key), str(value)) for key, value in value.items()]))
+    def __init__(self, value): super().__init__(SODict([(str(key), value if value == ALLCHAR else self.__geonum(key, value)) for key, value in value.items()]))
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
@@ -73,10 +73,10 @@ class Geography:
         return all([self.keys() == other.keys(), self.values() == other.values()])
     def __ne__(self, other): return not self.__eq__(other)  
 
-    def __lt__(self, other): return self.geoid < other.geoid
-    def __le__(self, other): return self.geoid <= other.geoid
-    def __ge__(self, other): return self.geoid >= other.geoid
-    def __gt__(self, other): return self.geoid > other.geoid
+    def __lt__(self, other): return self.geoID < other.geoID
+    def __le__(self, other): return self.geoID <= other.geoID
+    def __ge__(self, other): return self.geoID >= other.geoID
+    def __gt__(self, other): return self.geoID > other.geoID
 
     def __add__(self, other): return self.add(other)
     def add(self, other, *args, **kwargs):
@@ -89,7 +89,7 @@ class Geography:
             if self.getkey(i) != other.getkey(i): return False
             if self.getvalue(i) != ALLCHAR and self.getvalue(i) != other.getvalue(i): return False
         return True
-        
+
     @classmethod
     def fromstr(cls, geostr, **kwargs):
         return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(DELIMITER)]))

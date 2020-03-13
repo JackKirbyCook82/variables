@@ -33,7 +33,7 @@ class Datetime:
     fields = DATE   
     def __init__(self, *args, year, month=1, day=1, hour=0, minute=0, second=0, **kwargs):
         instance = datetime(int(year), int(month), int(day), hour=int(hour), minute=int(minute), second=int(second))
-        self.setformat(kwargs.get('dateformat', DATEFORMAT))
+        self.setformat(kwargs.get('dateformat', DATETIMEFORMAT))
         super().__init__(instance)
         
     def __str__(self): return self.strftime(self.dateformat)  
@@ -63,7 +63,7 @@ class Datetime:
     def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)    
     @classmethod
     def fromstr(cls, datetimestr, **kwargs): 
-        datefmt = kwargs.get('dateformat', DATEFORMAT)
+        datefmt = kwargs.get('dateformat', DATETIMEFORMAT)
         if '.' in datefmt:
             try: return cls.frominstance(datetime.strptime(datetimestr, datefmt), dateformat=datefmt)  
             except ValueError: datefmt = datefmt.rpartition('.')[0]   
@@ -76,10 +76,10 @@ class Datetime:
 
 @Variable.register('date')
 class Date:
-    fields = DATETIME    
+    fields = DATE    
     def __init__(self, *args, year, month=1, day=1, **kwargs): 
         instance = date(int(year), int(month), int(day))
-        self.setformat(kwargs.get('dateformat', DATETIME))
+        self.setformat(kwargs.get('dateformat', DATEFORMAT))
         super().__init__(instance)
     
     def __str__(self): return self.strftime(self.dateformat)  
@@ -104,7 +104,7 @@ class Date:
     def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)    
     @classmethod
     def fromstr(cls, datestr, **kwargs): 
-        datefmt = kwargs.get('dateformat', DATETIME)
+        datefmt = kwargs.get('dateformat', DATEFORMAT)
         while '-' in datefmt:
             try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)   
             except ValueError: datefmt = datefmt.rpartition('-')[0]       
@@ -126,10 +126,10 @@ def compile_seconds(seconds, key):
     
 @Variable.register('timedelta')
 class Timedelta:  
-    fields = DATE
+    fields = TIMEDELTA
     def __init__(self, *args, days=0, hours=0, minutes=0, seconds=0, **kwargs):
         instance = timedelta(days=int(days), hours=int(hours), minutes=int(minutes), seconds=int(seconds))
-        self.setformat(kwargs.get('dateformat', DATEFORMAT))
+        self.setformat(kwargs.get('dateformat', TIMEDELTAFORMAT))
         super().__init__(instance)     
         
     def __str__(self): return TIMEDELTAFORMAT.format(**split_seconds(self.total_seconds())).lstrip()

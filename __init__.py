@@ -10,6 +10,7 @@ import json
 from collections import OrderedDict as ODict
 
 from variables.variable import VARIABLES, CUSTOM_VARIABLES, create_customvariable 
+from variables.custom import *
 from variables.date import *
 from variables.geography import *
 from variables.fields import *

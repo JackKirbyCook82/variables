@@ -8,12 +8,7 @@ Created on Wed Mar 4 2020
 
 from collections import namedtuple as ntuple
 
-from specs import HistogramSpec, RangeSpec
-from parsers import FormatValueParser
-from parsers.valuegenerators import RangeGenerator
-from parsers.valueformatters import RangeFormatter
-
-from variables.variable import Variable, create_customvariable
+from variables.variable import Variable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
@@ -25,37 +20,19 @@ __license__ = ""
 SEPARATOR = ' & '
 DELIMITER = '|'
 
-rangegenerators = {'range':RangeGenerator(*'&-/')}
-rangeformatters = {'range':RangeFormatter(DELIMITER)}
-rangeparser = FormatValueParser(rangegenerators, rangeformatters, pattern=';|&=')
-
-AgeRange = create_customvariable(RangeSpec(precision=0, unit='YRS'))
-CommuteRange = create_customvariable(RangeSpec(precision=0, unit='MINS'))
-
-RaceHistogram = create_customvariable(HistogramSpec(data='race', categories=['White', 'Black', 'Native', 'Asian', 'Islander', 'Other', 'Mix']))
-OriginHistogram = create_customvariable(HistogramSpec(data='origin', categories=['NonHispanic', 'Hispanic']))
-EducationHistogram = create_customvariable(HistogramSpec(data='education', categories=['Uneducated', 'GradeSchool', 'Associates', 'Bachelors', 'Graduate']))
-LanguageHistogram = create_customvariable(HistogramSpec(data='language', categories=['English', 'Spanish', 'IndoEuro', 'Asian', 'Pacific', 'African', 'Native', 'Arabic', 'Other']))
-EnglishHistogram = create_customvariable(HistogramSpec(data='english', categories=['Fluent', 'Well', 'Poor', 'Inable']))
-ChildrenHistogram = create_customvariable(HistogramSpec(data='children', categories=['W/OChildren', 'WChildren']))
-AgeHistogram = create_customvariable(HistogramSpec(data='age', categories=rangeparser('{} YRS|range|15-55/10&60&65-85/10|cut=lower&shift=upper'), 
-                                                   function=lambda x, *args, bounds, **kwargs: AgeRange.average(bounds=bounds).fromstr(x).value))
-CommuteHistogram = create_customvariable(HistogramSpec(data='commute', categories=rangeparser('{} MINS|range|5-45/5&60&90|shift=upper'), 
-                                                       function=lambda x, *args, bounds, **kwargs: CommuteRange.average(bounds=bounds).fromstr(x).value))
-
-CRIME = ('shooting', 'arson', 'burglary', 'assault', 'vandalism', 'robbery', 'arrest', 'other', 'theft')
-SCHOOL = ('graduation_rate', 'reading_rate', 'math_rate', 'ap_enrollment', 'avgsat_score', 'avgact_score', 'student_density', 'inexperience_ratio')
-SPACE = ('sqft', 'bedrooms', 'rooms')
-QUALITY = ('yearbuilt')
-PROXIMITY = {'commute':CommuteHistogram}
-COMMUNITY = {'race':RaceHistogram, 'origin':OriginHistogram, 'education':EducationHistogram, 'language':LanguageHistogram, 'english':EnglishHistogram, 'age':AgeHistogram, 'children':ChildrenHistogram}
+CRIME = ('shooting', 'arson', 'burglary', 'assault', 'vandalism', 'robbery', 'arrest', 'other', 'theft',)
+SCHOOL = ('graduation_rate', 'reading_rate', 'math_rate', 'ap_enrollment', 'avgsat_score', 'avgact_score', 'student_density', 'inexperience_ratio',)
+SPACE = ('sqft', 'bedrooms', 'rooms',)
+QUALITY = ('yearbuilt',)
+PROXIMITY = ('commute',)
+COMMUNITY = ('race', 'origin', 'education', 'language', 'age', 'children',)
 
 CrimeSgmts = ntuple('CrimeSgmts', ' '.join(CRIME))
 SchoolSgmts = ntuple('SchoolSgmts', ' '.join(SCHOOL))
 SpaceSgmts = ntuple('SpaceSgmts', ' '.join(SPACE))
 QualitySgmts = ntuple('QualitySgmts', ' '.join(QUALITY))
-ProximitySgmts = ntuple('ProximitySgmts', ' '.join(list(PROXIMITY.keys())))
-CommunitySgmts = ntuple('CommunitySgmts', ' '.join(list(COMMUNITY.keys())))
+ProximitySgmts = ntuple('ProximitySgmts', ' '.join(PROXIMITY))
+CommunitySgmts = ntuple('CommunitySgmts', ' '.join(COMMUNITY))
 
 _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else list(items)
 _filterempty = lambda items: [item for item in _aslist(items) if item is not None]
@@ -134,14 +111,12 @@ class Quality:
 class Proximity: 
     fields = PROXIMITY    
     def __init__(self, **kwargs): 
-        assert all([isinstance(kwargs[field], variable) for field, variable in self.fields.items()])
         super().__init__(ProximitySgmts({field:kwargs[field] for field in self.fields}))
     
 @HistField.register('community')    
 class Community: 
     fields = COMMUNITY       
     def __init__(self, **kwargs): 
-        assert all([isinstance(kwargs[field], variable) for field, variable in self.fields.items()])
         super().__init__(CommunitySgmts({field:kwargs[field] for field in self.fields}))
     
 
