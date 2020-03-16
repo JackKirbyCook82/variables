@@ -64,34 +64,34 @@ class Histogram:
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
     def __hash__(self): return hash((self.__class__.__name__, *self.value.values,))
-
-    def categoryvector(self, *args, **kwargs): return list(self.spec.category)
-    def indexvector(self, *args, **kwargs): return np.array(list(self.indexes))
-    def weightvector(self, *args, **kwargs): return np.array([self.value[category] for category in self.categories])
-    def valuevector(self, *args, **kwargs): return np.array([self.function(category, *args, **kwargs) for category in self.categories])
     
-    def array(self, *args, **kwargs): 
-        return np.array([np.full(weight, value) for value, weight in zip(np.nditer(self.valuevector(*args, **kwargs), np.nditer(self.weightvector(*args, **kwargs))))]).flatten()
+    @property
+    def categoryvector(self): return list(self.spec.category)
+    @property
+    def valuevector(self): return np.array(list(self.spec.index))
+    @property
+    def weightvector(self): return np.array([self.value[category] for category in self.spec.categories])   
     
-    def sample(self): return np.random.choice(self.categoryvector(), 1, p=self.weightvector())  
-    def total(self, *args, **kwargs): return np.sum(self.array(*args, **kwargs))
-    def mean(self, *args, **kwargs): return np.mean(self.array(*args, **kwargs))
-    def median(self, *args, **kwargs): return np.median(self.array(*args, **kwargs))
-    def stdev(self, *args, **kwargs): return np.std(self.array(*args, **kwargs))
-    def rstdev(self, *args, **kwargs): return self.std(*args, **kwargs) / self.mean(*args, **kwargs)
-    def skew(self, *args, **kwargs): return stats.skew(self.array(*args, **kwargs))
-    def kurtosis(self, *args, **kwargs): return stats.kurtosis(self.array(*args, **kwargs))
+    def array(self): return np.array([np.full(weight, value) for value, weight in zip(np.nditer(self.valuevector, np.nditer(self.weightvector)))]).flatten()
+    def sample(self): return np.random.choice(self.valuevector, 1, p=self.weightvector)  
+    def total(self): return np.sum(self.array)
+    def mean(self): return np.mean(self.array)
+    def median(self): return np.median(self.array)
+    def stdev(self): return np.std(self.array)
+    def rstdev(self): return self.std() / self.mean()
+    def skew(self): return stats.skew(self.array)
+    def kurtosis(self): return stats.kurtosis(self.array)
     
-    def xmin(self, *args, **kwargs): return np.minimum(self.valuevector(*args, **kwargs))
-    def xmax(self, *args, **kwargs): return np.maximum(self.valuevector(*args, **kwargs))
-    def xdev(self, x, *args, **kwargs): 
+    def xmin(self): return np.minimum(self.valuevector)
+    def xmax(self): return np.maximum(self.valuevector)
+    def xdev(self, x): 
         if isinstance(x, Number): pass
         elif isinstance(x, str):
             if x in self.categories: x = self.categories.index(x) 
             else: raise ValueError(x)
         else: raise TypeError(type(x))        
-        valuefunction = lambda value: pow(x - value, 2) / pow(self.xmax(*args, **kwargs) - self.xmin(*args, **kwargs), 2)
-        weightfunction = lambda weight: weight / self.total(*args, **kwargs)
+        valuefunction = lambda value: pow(x - value, 2) / pow(self.xmax() - self.xmin(), 2)
+        weightfunction = lambda weight: weight / self.total()
         return np.sum(np.array([valuefunction(value) * weightfunction(weight) for value, weight in zip(self.valuevector, self.weightvector)]))
     
     # OPERATIONS & TRANSFORMATIONS
