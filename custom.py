@@ -35,7 +35,7 @@ class Category:
     
     @samevariable
     def __contains__(self, other): return self.contains(other)
-    def __hash__(self): return hash((self.__class__.__name__, self.value,))
+    def __hash__(self): return hash((self.__class__.__name__, *self.value,))
     def __iter__(self): 
         for item in self.value: yield item
 
@@ -121,15 +121,17 @@ class Num:
         else: raise TypeError(type(other))
 
     @keydispatcher('how')
-    def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)    
+    def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)   
+    
     @unconsolidate.register('couple')
     def couple(self, other, *args, how='couple', **kwargs):
         assert how == 'couple'
         value = [min(self.value, other.value), max(self.value, other.value)]
         return self.operation(other.__class__, *args, method='unconsolidate', how=how, **kwargs)(value)
-    @unconsolidate.register('uncumulate')
-    def uncumulate(self, *args, how='uncumulate', direction, **kwargs):
-        assert all([how == 'uncumulate', direction == 'lower' or direction == 'upper', direction == self.numdirection])
+    
+    @unconsolidate.register('cumulate')
+    def cumulate(self, *args, how='cumulate', direction, **kwargs):
+        assert all([how == 'cumulate', direction == 'lower' or direction == 'upper'])
         value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
         return self.transformation(*args, method='unconsolidate', how=how, direction=direction, **kwargs)(value)    
 
@@ -227,6 +229,13 @@ class Range:
         except TypeError: rightvalue = None
         return self.operation(other.__class__, *args, method='couple', **kwargs)([leftvalue, rightvalue])     
 
+    def boundary(self, *args, how=None, bounds=(None, None), **kwargs):
+        assert isinstance(bounds, (tuple, list))
+        assert len(bounds) == 2
+        getvalue = lambda value, bound: value if value is not None else bound
+        value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]
+        return self.transformation(*args, method='boundary', how=how, **kwargs)(value)  
+
     @keydispatcher('how')
     def consolidate(self, *args, how, **kwargs): raise KeyError(how) 
     
@@ -246,7 +255,7 @@ class Range:
         return self.transformation(*args, method='consolidate', how=how, direction=direction, **kwargs)(value)
     
     @consolidate.register('differential')
-    def differential(self, *args, how='differential', bounds=[None, None], **kwargs):
+    def differential(self, *args, how='differential', bounds=(None, None), **kwargs):
         assert how == 'differential'
         getvalue = lambda value, bound: value if value is not None else bound
         value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]

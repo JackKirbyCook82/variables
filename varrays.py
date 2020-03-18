@@ -12,7 +12,7 @@ import numpy as np
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
 __all__ = ['varray_fromvalues', 'summation', 'minimum', 'maximum', 'mean', 'average', 'upper_cumulate', 'lower_cumulate', 'upper_uncumulate', 'lower_uncumulate', 
-           'moving_average', 'moving_summation', 'moving_differential', 'moving_minimum', 'moving_maximum', 'moving_couple', 'groupby_bins', 'groupby_contains', 'groupby_overlaps']
+           'moving_average', 'moving_summation', 'moving_difference', 'moving_minimum', 'moving_maximum', 'moving_couple', 'groupby_bins', 'groupby_contains', 'groupby_overlaps']
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -56,8 +56,8 @@ def varray_dispatcher(mainfunc):
 
     def wrapper(varray, *args, **kwargs): 
         datatype = varray_datatype(varray)
-        try: return registry()[datatype](varray, *args, **kwargs)        
-        except KeyError: raise VariableMethodNotSupported(mainfunc, datatype)
+        if datatype not in registry().keys(): raise VariableMethodNotSupported(mainfunc, datatype)
+        else: return registry()[datatype](varray, *args, **kwargs)  
 
     wrapper.register = register 
     wrapper.registry = registry
@@ -154,6 +154,10 @@ def unconsolidate(varray, *args, how, **kwargs): pass
 @unconsolidate.register('num')
 def _unconsolidate(varray, *args, how, **kwargs): return [item.unconsolidate(*args, how=how, **kwargs) for item in varray]   
 
+@varray_dispatcher
+def boundary(varray, *args, **kwargs): pass
+@boundary.register('range')
+def _boundary(varray, *args, **kwargs): return [item.boundary(*args, **kwargs) for item in varray]   
 
 # ROLLING
 @varray_dispatcher
@@ -217,14 +221,14 @@ def moving_summation(varray, *args, period, **kwargs):
     return [summation(varray[i:i+1+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]  
 
 @varray_dispatcher
-def moving_differential(varray, *args, period, **kwargs): pass
-@moving_differential.register('num')
-def _moving_differential_num(varray, *args, period, **kwargs):
+def moving_difference(varray, *args, period, **kwargs): pass
+@moving_difference.register('num')
+def _moving_difference_num(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
     return [varray[i].subtract(varray[i+period], *args, period=period, **kwargs) for i in range(0, len(varray)-period)]  
-@moving_differential.register('range')
-def _moving_differential_range(varray, *args, period, **kwargs):
+@moving_difference.register('range')
+def _moving_difference_range(varray, *args, period, **kwargs):
     assert isinstance(period, int)
     assert len(varray) >= period
     return [item.differental(*args, **kwargs) for item in moving_summation(varray, *args, period=period, **kwargs)]
