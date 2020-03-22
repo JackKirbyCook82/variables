@@ -12,7 +12,7 @@ from variables.variable import Variable
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['Crime', 'School', 'Space', 'Proximity', 'Community']
+__all__ = ['Crime', 'School', 'Space', 'Proximity', 'Community', 'Quality']
 __copyright__ = "Copyright 2020, Jack Kirby Cook"
 __license__ = ""
 
