@@ -20,6 +20,8 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
+_aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else list(items)
+
 def within_threshold(value, other, threshold):
     if value == other == None: return True
     elif None in (value, other): return False
@@ -68,12 +70,12 @@ class Histogram:
     @property
     def categoryvector(self): return list(self.spec.category)
     @property
-    def valuevector(self): return np.array(list(self.spec.index))
+    def indexvector(self): return np.array(list(self.spec.index))
     @property
     def weightvector(self): return np.array([self.value[category] for category in self.spec.categories])   
     
-    def array(self): return np.array([np.full(weight, value) for value, weight in zip(np.nditer(self.valuevector, np.nditer(self.weightvector)))]).flatten()
-    def sample(self): return np.random.choice(self.valuevector, 1, p=self.weightvector)  
+    def array(self): return np.array([np.full(weight, value) for value, weight in zip(np.nditer(self.indexvector, np.nditer(self.weightvector)))]).flatten()
+    def sample(self): return np.random.choice(self.indexvector, 1, p=self.weightvector)  
     def total(self): return np.sum(self.array)
     def mean(self): return np.mean(self.array)
     def median(self): return np.median(self.array)
@@ -82,17 +84,17 @@ class Histogram:
     def skew(self): return stats.skew(self.array)
     def kurtosis(self): return stats.kurtosis(self.array)
     
-    def xmin(self): return np.minimum(self.valuevector)
-    def xmax(self): return np.maximum(self.valuevector)
+    def xmin(self): return np.minimum(self.indexvector)
+    def xmax(self): return np.maximum(self.indexvector)
     def xdev(self, x): 
         if isinstance(x, Number): pass
         elif isinstance(x, str):
             if x in self.categories: x = self.categories.index(x) 
             else: raise ValueError(x)
         else: raise TypeError(type(x))        
-        valuefunction = lambda value: pow(x - value, 2) / pow(self.xmax() - self.xmin(), 2)
+        indexfunction = lambda i: pow(x - i, 2) / pow(self.xmax() - self.xmin(), 2)
         weightfunction = lambda weight: weight / self.total()
-        return np.sum(np.array([valuefunction(value) * weightfunction(weight) for value, weight in zip(self.valuevector, self.weightvector)]))
+        return np.sum(np.array([indexfunction(index) * weightfunction(weight) for index, weight in zip(self.indexvector, self.weightvector)]))
     
     # OPERATIONS & TRANSFORMATIONS
     def add(self, other, *args, **kwargs): 
@@ -120,15 +122,13 @@ class Num:
         elif isinstance(other, Num): return self.operation(other.__class__, *args, method='divide', **kwargs)(self.value / other.value) 
         else: raise TypeError(type(other))
 
+    def couple(self, other, *args, how=None, **kwargs):
+        value = [min(self.value, *_aslist(other.value)), max(self.value, *_aslist(other.value))]
+        return self.operation(other.__class__, *args, method='couple', how=how, **kwargs)(value)
+
     @keydispatcher('how')
     def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)   
-    
-    @unconsolidate.register('couple')
-    def couple(self, other, *args, how='couple', **kwargs):
-        assert how == 'couple'
-        value = [min(self.value, other.value), max(self.value, other.value)]
-        return self.operation(other.__class__, *args, method='unconsolidate', how=how, **kwargs)(value)
-    
+
     @unconsolidate.register('cumulate')
     def cumulate(self, *args, how='cumulate', direction, **kwargs):
         assert all([how == 'cumulate', direction == 'lower' or direction == 'upper'])
@@ -221,13 +221,9 @@ class Range:
         elif isinstance(other, Range): return self.operation(other.__class__, *args, method='divide', **kwargs)([val/other.value for val in self.value])
         else: TypeError(type(other))
         
-    def couple(self, other, *args, **kwargs):
-        assert isinstance(other, self.__class__)
-        try: leftvalue = min([self.leftvalue, other.leftvalue])
-        except TypeError: leftvalue = None
-        try: rightvalue = max([self.rightvalue, other.rightvalue])
-        except TypeError: rightvalue = None
-        return self.operation(other.__class__, *args, method='couple', **kwargs)([leftvalue, rightvalue])     
+    def couple(self, other, *args, how=None, **kwargs):
+        value = [min(*_aslist(self.value), *_aslist(other.value)), max(*_aslist(self.value), *_aslist(other.value))]
+        return self.operation(other.__class__, *args, method='couple', how=how, **kwargs)(value)     
 
     def boundary(self, *args, how=None, bounds=(None, None), **kwargs):
         assert isinstance(bounds, (tuple, list))
