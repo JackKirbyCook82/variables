@@ -13,7 +13,6 @@ from variables.variable import VARIABLES, CUSTOM_VARIABLES, create_customvariabl
 from variables.custom import *
 from variables.date import *
 from variables.geography import *
-from variables.fields import *
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
