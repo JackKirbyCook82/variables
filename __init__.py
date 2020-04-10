@@ -26,6 +26,10 @@ _flatten = lambda nesteditems: [item for items in nesteditems for item in items]
 
 
 class Variables(ODict):
+    def __repr__(self): 
+        if self.name: return "{}(name='{}')".format(self.__class__.__name__, self.name)
+        else: return "{}()".format(self.__class__.__name__)  
+        
     def __init__(self, items, name=None):
         if isinstance(items, list): pass
         elif isinstance(items, dict): items = [(key, value) for key, value in items.items()]
@@ -43,15 +47,14 @@ class Variables(ODict):
         jsonstr = json.dumps(content, sort_keys=False, indent=3, separators=(',', ' : '), default=str)                
         return ' '.join([namestr, jsonstr]) 
     
-    def copy(self): return self.__class__([(key, value) for key, value in self.items()], name=self.__name)
-    def select(self, keys): 
-        assert isinstance(keys, list)
-        return self.__class__([(key, self[key]) for key in keys], name=self.__name)
-    def update(self, items): 
+    def copy(self, name=None): return self.__class__([(key, value) for key, value in self.items()], name=name if name else self.__name)
+    def select(self, keys, name=None): return self.__class__([(key, self[key]) for key in _aslist(keys)], name=name if name else self.__name)
+    
+    def update(self, items, name=None): 
         assert isinstance(items, dict)
         updated = [(key, items.get(key, value)) for key, value in self.items()]
         new = [(key, value) for key, value in items.items() if key not in self.keys()]
-        return self.__class__(updated + new, name=self.__name)
+        return self.__class__(updated+new, name=name if name else self.__name)
 
     @classmethod
     def create(cls, name=None, **specs):

@@ -22,11 +22,6 @@ __license__ = ""
 
 _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else list(items)
 
-def within_threshold(value, other, threshold):
-    if value == other == None: return True
-    elif None in (value, other): return False
-    else: return abs(value - other) <= threshold
-
 
 @CustomVariable.register('category')
 class Category: 
@@ -42,6 +37,10 @@ class Category:
         for item in self.value: yield item
 
     # OPERATIONS & TRANSFORMATIONS
+    def expand(self, *args, how=None, **kwargs):
+        cls = self.transformation(*args, method='expand', how=how, **kwargs)
+        return [cls([item]) for item in self.value] 
+
     def add(self, other, *args, **kwargs): 
         if any([item in self.value for item in other.value]): raise VariableOverlapError(self, other, 'add')
         value = {*self.value, *other.value}
@@ -128,7 +127,6 @@ class Num:
 
     @keydispatcher('how')
     def unconsolidate(self, *args, how, **kwargs): raise KeyError(how)   
-
     @unconsolidate.register('cumulate')
     def cumulate(self, *args, how='cumulate', direction, **kwargs):
         assert all([how == 'cumulate', direction == 'lower' or direction == 'upper'])
@@ -150,13 +148,20 @@ class Range:
     @property
     def upper(self): return self.value[-1]
     
-    @samevariable
     def contains(self, other): 
-        try: left = self.leftvalue <= other.leftvalue
-        except: left = self.leftvalue is None
-        try: right = self.rightvalue >= other.rightvalue
-        except: right = self.rightvalue is None
-        return left and right          
+        if isinstance(other, Num):
+            try: left = other.value >= self.leftvalue
+            except: left = self.leftvalue is None
+            try: right = other.value <= self.rightvalue
+            except: right = self.rightvalue is None
+        elif isinstance(other, Range):            
+            try: left = self.leftvalue <= other.leftvalue
+            except: left = self.leftvalue is None
+            try: right = self.rightvalue >= other.rightvalue
+            except: right = self.rightvalue is None      
+        else: raise TypeError(type(other))
+        return left and right  
+    
     @samevariable
     def overlaps(self, other):
         try: left = not self.leftvalue >= other.rightvalue
@@ -189,24 +194,23 @@ class Range:
     
     # OPERATIONS & TRANSFORMATIONS    
     def add(self, other, *args, **kwargs):
-        if all([within_threshold(self.leftvalue, other.rightvalue, self.spec.threshold), self.leftvalue is not None, other.rightvalue is not None]): value = [other.leftvalue, self.rightvalue]
-        elif all([within_threshold(self.rightvalue, other.leftvalue, self.spec.threshold), self.rightvalue is not None, other.leftvalue is not None]): value = [self.leftvalue, other.rightvalue]
+        if self < other: 
+            if self.upper is None or other.lower is None: raise VariableOverlapError(self, other, 'add')
+            if abs(self.upper - other.lower) > self.spec.threshold: raise VariableOverlapError(self, other, 'add')
+            value = [self.leftvalue, other.rightvalue]
+        elif self > other: 
+            if self.lower is None or other.upper is None: raise VariableOverlapError(self, other, 'add')
+            if abs(self.lower - other.upper) > self.spec.threshold: raise VariableOverlapError(self, other, 'add')                        
+            value = [other.leftvalue, self.rightvalue]
         else: raise VariableOverlapError(self, other, 'add')
         return self.operation(other.__class__, *args, method='add', **kwargs)(value)
     
     def subtract(self, other, *args, **kwargs):
-        if all([self.value.count(None) == 0, None not in other.value]):
-            if all([within_threshold(self.leftvalue, other.leftvalue, self.spec.threshold), other.rightvalue < self.rightvalue]): value = [other.rightvalue, self.rightvalue]
-            elif all([within_threshold(self.rightvalue, other.rightvalue, self.spec.threshold), other.leftvalue > self.leftvalue]): value = [self.leftvalue, other.leftvalue]
-            else: raise ValueError(self.value)            
-        elif all([self.value.count(None) == 1, other.value.count(None) <= 1]):
-            value = self.value.copy()
-            value[value.index(None)] = [item for item in other.value if item is not None][0]
-        elif all([self.value.count(None) == 2, other.value.count(None) == 1]):
-            if other.leftvalue is None: value = [other.rightvalue, self.rightvalue]
-            elif other.rightvalue is None: value = [self.leftvalue, other.leftvalue]
-            else: raise ValueError(other.value)
-        else: raise VariableOverlapError(self, other, 'subtract')
+        if not self.contains(other): raise VariableOverlapError(self, other, 'subtract')        
+        if (abs(self.lower - other.lower) <= self.spec.threshold if (self.lower is not None and other.lower is not None) else False) or self.lower == other.lower == None: 
+            value = [other.upper + self.spec.threshold, self.upper]
+        elif (abs(self.upper - other.upper) <= self.spec.threshold if (self.upper is not None and other.upper is not None) else False) or self.upper == other.upper == None: 
+            value = [self.lower, other.lower - self.spec.threshold]
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
@@ -225,12 +229,25 @@ class Range:
         value = [min(*_aslist(self.value), *_aslist(other.value)), max(*_aslist(self.value), *_aslist(other.value))]
         return self.operation(other.__class__, *args, method='couple', how=how, **kwargs)(value)     
 
+    def split(self, value, *args, how=None, **kwargs):
+        value = round(value, self.spec.threshold)
+        if value >= self.upper or value <= self.lower: return self       
+        lowervalues, uppervalues = [self.lower, value], [value + self.spec.threshold, self.upper]
+        return self.transformation(*args, method='split', how=how, **kwargs)(lowervalues), self.transformation(*args, method='split', how=how, **kwargs)(uppervalues)
+
     def boundary(self, *args, how=None, bounds=(None, None), **kwargs):
         assert isinstance(bounds, (tuple, list))
         assert len(bounds) == 2
         getvalue = lambda value, bound: value if value is not None else bound
         value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]
         return self.transformation(*args, method='boundary', how=how, **kwargs)(value)  
+
+    def expand(self, *args, how=None, bounds=(None, None), **kwargs):
+        assert isinstance(bounds, (tuple, list))
+        assert len(bounds) == 2
+        getvalue = lambda value, bound: value if value is not None else bound
+        cls = self.transformation(*args, method='expand', how=how, **kwargs)
+        return [cls(value) for value in range(getvalue(self.lower, bounds[0]), getvalue(self.upper, bounds[-1]) + self.spec.threshold, self.spec.threshold)]
 
     @keydispatcher('how')
     def consolidate(self, *args, how, **kwargs): raise KeyError(how) 
@@ -246,7 +263,7 @@ class Range:
     
     @consolidate.register('cumulate')
     def cumulate(self, *args, how='cumulate', direction, **kwargs):
-        assert all([how == 'cumulate', direction == self.spec.direction(self.value), direction == 'lower' or direction == 'upper'])
+        assert all([how == 'cumulate', direction == 'lower' or direction == 'upper'])
         value = getattr(self, {'upper':'leftvalue', 'lower':'rightvalue'}[direction])
         return self.transformation(*args, method='consolidate', how=how, direction=direction, **kwargs)(value)
     

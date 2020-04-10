@@ -11,8 +11,7 @@ import numpy as np
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
-__all__ = ['varray_fromvalues', 'summation', 'minimum', 'maximum', 'mean', 'average', 'upper_cumulate', 'lower_cumulate', 'upper_uncumulate', 'lower_uncumulate', 
-           'moving_average', 'moving_summation', 'moving_difference', 'moving_minimum', 'moving_maximum', 'moving_couple', 'groupby_bins', 'groupby_contains', 'groupby_overlaps']
+__all__ = []
 __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
@@ -143,6 +142,7 @@ def _groupby_overlaps(varray, *args, **kwargs):
     groupings = {couple(values):values for values in set(*groupings.values())}
     return groupings
 
+
 # BROADCASTING
 @varray_dispatcher
 def consolidate(varray, *args, how, **kwargs): pass
@@ -159,7 +159,15 @@ def boundary(varray, *args, **kwargs): pass
 @boundary.register('range')
 def _boundary(varray, *args, **kwargs): return [item.boundary(*args, **kwargs) for item in varray]   
 
-# ROLLING
+
+# EXPANSIONS
+@varray_dispatcher
+def expand(varray, *args, **kwargs): pass
+@expand.register('range', 'category')
+def _expand(varray, *args, **kwargs): return _flatten([item.expand(*args, **kwargs) for item in varray])
+
+
+# MOVING
 @varray_dispatcher
 def upper_cumulate(varray, *args, **kwargs): pass
 @upper_cumulate.register('num', 'range')
