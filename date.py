@@ -32,7 +32,8 @@ TIMEDELTAFORMAT = '{days} {hours}:{minutes}:{seconds}'
 class Datetime:  
     fields = DATE   
     def __init__(self, *args, year, month=1, day=1, hour=0, minute=0, second=0, **kwargs):
-        instance = datetime(int(year), int(month), int(day), hour=int(hour), minute=int(minute), second=int(second))
+        instance = (args[0] if isinstance(args[0], datetime) else None) if args else None
+        instance = datetime(int(year), int(month), int(day), hour=int(hour), minute=int(minute), second=int(second)) if not instance else instance
         self.setformat(kwargs.get('dateformat', DATETIMEFORMAT))
         super().__init__(instance)
         
@@ -60,7 +61,8 @@ class Datetime:
     @classmethod
     def fromnow(cls): return cls.frominstance(datetime.now())    
     @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)    
+    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)        
+
     @classmethod
     def fromstr(cls, datetimestr, **kwargs): 
         datefmt = kwargs.get('dateformat', DATETIMEFORMAT)
@@ -71,14 +73,15 @@ class Datetime:
             try: return cls.frominstance(datetime.strptime(datetimestr, datefmt), dateformat=datefmt)   
             except ValueError: datefmt = datefmt.rpartition('-')[0]  
         try: return cls.frominstance(datetime.strptime(datetimestr, datefmt), dateformat=datefmt)    
-        except: raise ValueError(datetimestr)      
+        except: raise ValueError(datetimestr)   
     
 
 @Variable.register('date')
 class Date:
     fields = DATE    
     def __init__(self, *args, year, month=1, day=1, **kwargs): 
-        instance = date(int(year), int(month), int(day))
+        instance = (args[0] if isinstance(args[0], date) else None) if args else None
+        instance = date(int(year), int(month), int(day)) if not instance else instance
         self.setformat(kwargs.get('dateformat', DATEFORMAT))
         super().__init__(instance)
     
@@ -101,7 +104,8 @@ class Date:
     @classmethod
     def fromnow(cls): return cls.frominstance(datetime.now())    
     @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)    
+    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)      
+ 
     @classmethod
     def fromstr(cls, datestr, **kwargs): 
         datefmt = kwargs.get('dateformat', DATEFORMAT)
@@ -109,8 +113,8 @@ class Date:
             try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)   
             except ValueError: datefmt = datefmt.rpartition('-')[0]       
         try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)    
-        except: raise ValueError(datestr)    
-  
+        except: raise ValueError(datestr)  
+    
     
 def split_seconds(seconds):
     function = lambda x, divisor: (math.modf(x/divisor)[0], math.modf(x/divisor)[1]*divisor)       
@@ -128,7 +132,8 @@ def compile_seconds(seconds, key):
 class Timedelta:  
     fields = TIMEDELTA
     def __init__(self, *args, days=0, hours=0, minutes=0, seconds=0, **kwargs):
-        instance = timedelta(days=int(days), hours=int(hours), minutes=int(minutes), seconds=int(seconds))
+        instance = (args[0] if isinstance(args[0], timedelta) else None) if args else None
+        instance = timedelta(days=int(days), hours=int(hours), minutes=int(minutes), seconds=int(seconds)) if not instance else instance
         self.setformat(kwargs.get('dateformat', TIMEDELTAFORMAT))
         super().__init__(instance)     
         
@@ -157,10 +162,9 @@ class Timedelta:
     def fromseconds(cls, seconds, *args, **kwargs): return cls(*args, **split_seconds(seconds), **kwargs)
     @classmethod
     def frominstance(cls, instance, *args, **kwargs): return cls(*args, **split_seconds(instance.total_seconds()), **kwargs)    
+
     @classmethod
     def fromstr(cls, timedeltastr, **kwargs): return cls(**parse(TIMEDELTAFORMAT, timedeltastr)   .named)  
-
-
 
 
 

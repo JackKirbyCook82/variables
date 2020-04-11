@@ -25,6 +25,10 @@ _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else lis
 
 @CustomVariable.register('category')
 class Category: 
+    def checkvalue(self, value): 
+        assert isinstance(value, tuple)
+        assert all([item in self.spec.categories for item in value])    
+    
     @samevariable
     def contains(self, other): return all([item in self.value for item in other.value])
     @samevariable
@@ -39,15 +43,15 @@ class Category:
     # OPERATIONS & TRANSFORMATIONS
     def expand(self, *args, how=None, **kwargs):
         cls = self.transformation(*args, method='expand', how=how, **kwargs)
-        return [cls([item]) for item in self.value] 
+        return [cls((item,)) for item in self.value] 
 
     def add(self, other, *args, **kwargs): 
         if any([item in self.value for item in other.value]): raise VariableOverlapError(self, other, 'add')
-        value = {*self.value, *other.value}
+        value = (*self.value, *other.value)
         return self.operation(other.__class__, *args, method='add', **kwargs)(value) 
     def subtract(self, other, *args, **kwargs): 
         if any([item not in self.values for item in other.values]): raise VariableOverlapError(self, other, 'sub')
-        value = {value for value in self.values if value not in other.values}
+        value = tuple([value for value in self.values if value not in other.values])
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def divide(self, other, *args, **kwargs): 
@@ -56,12 +60,16 @@ class Category:
         return self.operation(other.__class__, *args, method='divide', **kwargs)(value)   
 
     def couple(self, other, *args, **kwargs):   
-        value = {*self.value, *other.value}
+        value = (*self.value, *other.value)
         return self.operation(other.__class__, *args, method='couple', **kwargs)(value)   
 
 
 @CustomVariable.register('histogram')
 class Histogram:
+    def checkvalue(self, value): 
+        assert isinstance(value, dict)
+        assert all([key in self.spec.categories and isinstance(weight, int) for key, weight in value])    
+    
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
     def __hash__(self): return hash((self.__class__.__name__, *self.value.values,))
@@ -105,9 +113,10 @@ class Histogram:
     
 
 @CustomVariable.register('num')
-class Num:    
+class Num:  
     def __hash__(self): return hash((self.__class__.__name__, self.value,))
-    
+    def checkvalue(self, value): assert isinstance(value, Number)
+        
     # OPERATIONS & TRANSFORMATIONS        
     def add(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='add', **kwargs)(self.value + other.value)   
     def subtract(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='subtract', **kwargs)(self.value - other.value)
@@ -130,14 +139,18 @@ class Num:
     @unconsolidate.register('cumulate')
     def cumulate(self, *args, how='cumulate', direction, **kwargs):
         assert all([how == 'cumulate', direction == 'lower' or direction == 'upper'])
-        value = [self.value if direction == 'upper' else None, self.value if direction == 'lower' else None]
+        value = (self.value if direction == 'upper' else None, self.value if direction == 'lower' else None)
         return self.transformation(*args, method='unconsolidate', how=how, direction=direction, **kwargs)(value)    
 
 
 @CustomVariable.register('range')
 class Range:  
     def __hash__(self): return hash((self.__class__.__name__, self.value[0], self.value[-1],))
-    
+    def checkvalue(self, value): 
+        assert isinstance(value, tuple)
+        assert len(value) == 2
+        assert all([isinstance(item, (Number, type(None))) for item in value])
+       
     @property
     def leftvalue(self): return self.value[0]
     @property
@@ -197,49 +210,49 @@ class Range:
         if self < other: 
             if self.upper is None or other.lower is None: raise VariableOverlapError(self, other, 'add')
             if abs(self.upper - other.lower) > self.spec.threshold: raise VariableOverlapError(self, other, 'add')
-            value = [self.leftvalue, other.rightvalue]
+            value = (self.leftvalue, other.rightvalue)
         elif self > other: 
             if self.lower is None or other.upper is None: raise VariableOverlapError(self, other, 'add')
             if abs(self.lower - other.upper) > self.spec.threshold: raise VariableOverlapError(self, other, 'add')                        
-            value = [other.leftvalue, self.rightvalue]
+            value = (other.leftvalue, self.rightvalue)
         else: raise VariableOverlapError(self, other, 'add')
         return self.operation(other.__class__, *args, method='add', **kwargs)(value)
     
     def subtract(self, other, *args, **kwargs):
         if not self.contains(other): raise VariableOverlapError(self, other, 'subtract')        
         if (abs(self.lower - other.lower) <= self.spec.threshold if (self.lower is not None and other.lower is not None) else False) or self.lower == other.lower == None: 
-            value = [other.upper + self.spec.threshold, self.upper]
+            value = (other.upper + self.spec.threshold, self.upper)
         elif (abs(self.upper - other.upper) <= self.spec.threshold if (self.upper is not None and other.upper is not None) else False) or self.upper == other.upper == None: 
-            value = [self.lower, other.lower - self.spec.threshold]
+            value = (self.lower, other.lower - self.spec.threshold)
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value)
 
     def multiply(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.transformation(*args, method='factor', how='multiply', factor=other, **kwargs)([val*other for val in self.value])    
-        elif isinstance(other, Num): return self.operation(other, *args, method='multiply', **kwargs)([val*other.value for val in self.value])   
-        elif isinstance(other, Range): return self.operation(other.__class__, *args, method='multiply', **kwargs)([val*other.value for val in self.value])
+        if isinstance(other, Number): return self.transformation(*args, method='factor', how='multiply', factor=other, **kwargs)(tuple([val*other for val in self.value])) 
+        elif isinstance(other, Num): return self.operation(other, *args, method='multiply', **kwargs)(tuple([val*other.value for val in self.value]))   
+        elif isinstance(other, Range): return self.operation(other.__class__, *args, method='multiply', **kwargs)(tuple([val*other.value for val in self.value]))
         else: TypeError(type(other))
     
     def divide(self, other, *args, **kwargs): 
-        if isinstance(other, Number): return self.transformation(*args, method='factor', how='divide', factor=other, **kwargs)([val/other for val in self.value])    
-        elif isinstance(other, Num): return self.operation(other, *args, method='divide', **kwargs)([val/other.value for val in self.value])   
-        elif isinstance(other, Range): return self.operation(other.__class__, *args, method='divide', **kwargs)([val/other.value for val in self.value])
+        if isinstance(other, Number): return self.transformation(*args, method='factor', how='divide', factor=other, **kwargs)(tuple([val/other for val in self.value])) 
+        elif isinstance(other, Num): return self.operation(other, *args, method='divide', **kwargs)(tuple([val/other.value for val in self.value]))   
+        elif isinstance(other, Range): return self.operation(other.__class__, *args, method='divide', **kwargs)(tuple([val/other.value for val in self.value]))
         else: TypeError(type(other))
         
     def couple(self, other, *args, how=None, **kwargs):
-        value = [min(*_aslist(self.value), *_aslist(other.value)), max(*_aslist(self.value), *_aslist(other.value))]
+        value = (min(*_aslist(self.value), *_aslist(other.value)), max(*_aslist(self.value), *_aslist(other.value)))
         return self.operation(other.__class__, *args, method='couple', how=how, **kwargs)(value)     
 
     def split(self, value, *args, how=None, **kwargs):
         value = round(value, self.spec.threshold)
         if value >= self.upper or value <= self.lower: return self       
-        lowervalues, uppervalues = [self.lower, value], [value + self.spec.threshold, self.upper]
+        lowervalues, uppervalues = (self.lower, value), (value + self.spec.threshold, self.upper)
         return self.transformation(*args, method='split', how=how, **kwargs)(lowervalues), self.transformation(*args, method='split', how=how, **kwargs)(uppervalues)
 
     def boundary(self, *args, how=None, bounds=(None, None), **kwargs):
         assert isinstance(bounds, (tuple, list))
         assert len(bounds) == 2
         getvalue = lambda value, bound: value if value is not None else bound
-        value = [getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1])]
+        value = (getvalue(self.leftvalue, bounds[0]), getvalue(self.rightvalue, bounds[-1]))
         return self.transformation(*args, method='boundary', how=how, **kwargs)(value)  
 
     def expand(self, *args, how=None, bounds=(None, None), **kwargs):
@@ -247,7 +260,7 @@ class Range:
         assert len(bounds) == 2
         getvalue = lambda value, bound: value if value is not None else bound
         cls = self.transformation(*args, method='expand', how=how, **kwargs)
-        return [cls(value) for value in range(getvalue(self.lower, bounds[0]), getvalue(self.upper, bounds[-1]) + self.spec.threshold, self.spec.threshold)]
+        return [cls(value) for value in np.arange(getvalue(self.lower, bounds[0]), getvalue(self.upper, bounds[-1]) + self.spec.threshold, self.spec.threshold)]
 
     @keydispatcher('how')
     def consolidate(self, *args, how, **kwargs): raise KeyError(how) 

@@ -160,6 +160,3 @@ class Address:
         street, city, state_zipcode = addressstr.split(',')
         state, zipcode = state_zipcode.split(' ')
         return cls(street, city, state, zipcode)
-
-
-

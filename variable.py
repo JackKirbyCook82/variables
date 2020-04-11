@@ -54,9 +54,11 @@ class Variable(ABC):
     @abstractmethod
     def __str__(self): pass
     @abstractmethod
+    def __hash__(self): pass
+    @abstractmethod
     def fromstr(self): pass
     @abstractmethod
-    def __hash__(self): pass
+    def checkvalue(self, value): pass
 
     @classmethod
     def jsonstr(cls): return json.dumps(dict(data=cls.datatype), sort_keys=True, indent=3, separators=(',', ' : '), default=str)   
@@ -64,7 +66,9 @@ class Variable(ABC):
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
     @property
     def value(self): return self.__value    
-    def __init__(self, value): self.__value = value   
+    def __init__(self, value): 
+        self.checkvalue(value)
+        self.__value = value   
     
     # EQUALITY
     @samevariable
@@ -90,17 +94,17 @@ class Variable(ABC):
 
  
 class CustomVariable(Variable):
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value)     
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value) 
+    def __str__(self): return self.spec.asstr(self.value)  
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
         if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
         return super().__new__(cls)
-         
+       
     @classmethod
     def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
-    def __str__(self): return self.spec.asstr(self.value)  
     @classmethod
-    def jsonstr(cls): return cls.spec.jsonstr()
+    def jsonstr(cls): return cls.spec.jsonstr()    
     
     @classmethod
     def register(cls, datatype):  
