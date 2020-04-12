@@ -59,6 +59,8 @@ class Variable(ABC):
     def fromstr(self): pass
     @abstractmethod
     def checkvalue(self, value): pass
+    @abstractmethod
+    def fixvalue(self, value): pass
 
     @classmethod
     def jsonstr(cls): return json.dumps(dict(data=cls.datatype), sort_keys=True, indent=3, separators=(',', ' : '), default=str)   
@@ -67,6 +69,8 @@ class Variable(ABC):
     @property
     def value(self): return self.__value    
     def __init__(self, value): 
+        try: self.checkvalue(value)
+        except ValueError: value = self.fixvalue(value)
         self.checkvalue(value)
         self.__value = value   
     

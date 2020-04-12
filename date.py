@@ -31,12 +31,16 @@ TIMEDELTAFORMAT = '{days} {hours}:{minutes}:{seconds}'
 @Variable.register('datetime')
 class Datetime:  
     fields = DATE   
-    def __init__(self, *args, year, month=1, day=1, hour=0, minute=0, second=0, **kwargs):
+    def __init__(self, *args, year=None, month=1, day=1, hour=0, minute=0, second=0, **kwargs):
         instance = (args[0] if isinstance(args[0], datetime) else None) if args else None
+        if instance is None: assert year is not None
         instance = datetime(int(year), int(month), int(day), hour=int(hour), minute=int(minute), second=int(second)) if not instance else instance
         self.setformat(kwargs.get('dateformat', DATETIMEFORMAT))
         super().__init__(instance)
-        
+     
+    def checkvalue(self, value): assert isinstance(value, datetime)
+    def fixvalue(self, value): return value
+    
     def __str__(self): return self.strftime(self.dateformat)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
@@ -79,11 +83,15 @@ class Datetime:
 @Variable.register('date')
 class Date:
     fields = DATE    
-    def __init__(self, *args, year, month=1, day=1, **kwargs): 
+    def __init__(self, *args, year=None, month=1, day=1, **kwargs): 
         instance = (args[0] if isinstance(args[0], date) else None) if args else None
+        if instance is None: assert year is not None
         instance = date(int(year), int(month), int(day)) if not instance else instance
         self.setformat(kwargs.get('dateformat', DATEFORMAT))
         super().__init__(instance)
+    
+    def checkvalue(self, value): assert isinstance(value, date)
+    def fixvalue(self, value): return value
     
     def __str__(self): return self.strftime(self.dateformat)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
@@ -137,6 +145,9 @@ class Timedelta:
         self.setformat(kwargs.get('dateformat', TIMEDELTAFORMAT))
         super().__init__(instance)     
         
+    def checkvalue(self, value): assert isinstance(value, timedelta)
+    def fixvalue(self, value): return value
+    
     def __str__(self): return TIMEDELTAFORMAT.format(**split_seconds(self.total_seconds())).lstrip()
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  

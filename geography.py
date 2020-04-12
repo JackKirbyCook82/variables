@@ -41,7 +41,10 @@ class Geography:
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
     def __geonum(self, key, value): return GEOLENGTHS[key] * ALLID if self.__geotype(value) == 'all' else str(value).zfill(GEOLENGTHS[key])
 
-    def __init__(self, value): super().__init__(SODict([(str(key), value if value == ALLCHAR else self.__geonum(key, value)) for key, value in value.items()]))
+    def checkvalue(self, value): assert isinstance(value, dict)
+    def fixvalue(self, value): return value
+    
+    def __init__(self, value): super().__init__(SODict([(str(key), value if value == ALLCHAR else self.__geonum(key, value)) for key, value in value.items()]))        
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
@@ -99,7 +102,10 @@ class Geography:
 class Geopath: 
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
 
-    def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))
+    def checkvalue(self, value): assert isinstance(value, dict)
+    def fixvalue(self, value): return value
+    
+    def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))    
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
@@ -137,6 +143,9 @@ class Geopath:
 class Address: 
     fields = ADDRESS
         
+    def checkvalue(self, value): assert isinstance(value, dict)
+    def fixvalue(self, value): return value   
+    
     def __init__(self, **kwargs): super().__init__(AddressSgmts({field:kwargs[field] for field in self.fields})) 
     def __len__(self): return len(self.value)
     def __str__(self): return ADDRESSFORMAT.format(**self.todict())

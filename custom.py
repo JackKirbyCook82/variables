@@ -26,8 +26,10 @@ _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else lis
 @CustomVariable.register('category')
 class Category: 
     def checkvalue(self, value): 
-        assert isinstance(value, tuple)
-        assert all([item in self.spec.categories for item in value])    
+        if not isinstance(value, tuple): raise ValueError(value)
+        if not all([isinstance(item, str) for item in value]): raise ValueError(value)
+        if not all([item in self.spec.categories for item in value]): raise ValueError(value)          
+    def fixvalue(self, value): return value
     
     @samevariable
     def contains(self, other): return all([item in self.value for item in other.value])
@@ -67,8 +69,10 @@ class Category:
 @CustomVariable.register('histogram')
 class Histogram:
     def checkvalue(self, value): 
-        assert isinstance(value, dict)
-        assert all([key in self.spec.categories and isinstance(weight, int) for key, weight in value])    
+        if not isinstance(value, dict): raise ValueError(value)
+        if not all([isinstance(key, str) for key in value.keys()]): raise ValueError(value)
+        if not all([key in self.spec.categories and isinstance(weight, int) for key, weight in value]): raise ValueError(value)    
+    def fixvalue(self, value): return value
     
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
@@ -115,7 +119,12 @@ class Histogram:
 @CustomVariable.register('num')
 class Num:  
     def __hash__(self): return hash((self.__class__.__name__, self.value,))
-    def checkvalue(self, value): assert isinstance(value, Number)
+
+    def checkvalue(self, value): 
+        if not isinstance(value, Number): raise ValueError(value)
+    def fixvalue(self, value):
+         if isinstance(value, str): return (float(value) if '.' in value else int(value)) * (-1 if '-' in value else 1)
+         else: return value
         
     # OPERATIONS & TRANSFORMATIONS        
     def add(self, other, *args, **kwargs): return self.operation(other.__class__, *args, method='add', **kwargs)(self.value + other.value)   
@@ -146,10 +155,14 @@ class Num:
 @CustomVariable.register('range')
 class Range:  
     def __hash__(self): return hash((self.__class__.__name__, self.value[0], self.value[-1],))
+    
     def checkvalue(self, value): 
-        assert isinstance(value, tuple)
-        assert len(value) == 2
-        assert all([isinstance(item, (Number, type(None))) for item in value])
+        if not isinstance(value, tuple): raise ValueError(value)
+        if not len(value) == 2: raise ValueError(value)
+        if not all([isinstance(item, (Number, type(None))) for item in value]): raise ValueError(value)
+    def fixvalue(self, value):
+         if isinstance(value, Number): return (value, value)
+         else: return value
        
     @property
     def leftvalue(self): return self.value[0]
