@@ -8,6 +8,7 @@ Created on Sat Apr 7 2018
 
 from datetime import datetime, date, timedelta
 from parse import parse
+import numpy as np
 import math
 import time
 
@@ -28,20 +29,25 @@ TIMEDELTA = ('days', 'hours', 'minutes', 'seconds')
 TIMEDELTAFORMAT = '{days} {hours}:{minutes}:{seconds}'
 
 
+x = np.datetime64('2012')
+y = x.astype(datetime)
+print(y, type(y))
+
+
 @Variable.register('datetime')
 class Datetime:  
     fields = DATE   
 
-#    def __init__(self, *args, year=None, month=1, day=1, hour=0, minute=0, second=0, **kwargs):
-#        instance = (args[0] if isinstance(args[0], datetime) else None) if args else None
-#        if instance is None: assert year is not None
-#        instance = datetime(int(year), int(month), int(day), hour=int(hour), minute=int(minute), second=int(second)) if not instance else instance
-#        self.setformat(kwargs.get('dateformat', DATETIMEFORMAT))
-#        super().__init__(instance)    
-#    def checkvalue(self, value): 
-#        if not isinstance(value, datetime): raise ValueError(value)
-#    def fixvalue(self, value): return value
-    
+    def __init__(self, value): 
+        super().__init__(value)
+        self.setformat(DATETIMEFORMAT)
+    def checkvalue(self, value):
+        if not isinstance(value, datetime): raise ValueError(value)
+    def fixvalue(self, value):
+        if isinstance(value, np.datetime64): return datetime.utcfromtimestamp((value - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's'))
+        elif isinstance(value, dict): return datetime(int(value['year']), int(value.get('month', 1)), int(value.get('day', 1)), hour=int(value.get('hour', 0)), minute=int(value.get('minute', 0)), second=int(value.get('second', 0)))
+        else: return value
+       
     def __str__(self): return self.strftime(self.dateformat)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
@@ -50,34 +56,31 @@ class Datetime:
     @property
     def timestamp(self): return int(time.mktime(self.timetuple()))     
     @classmethod
-    def fromtimestamp(cls, timestamp): return cls.frominstance(datetime.fromtimestamp(int(timestamp)))   
+    def fromtimestamp(cls, timestamp): return cls(datetime.fromtimestamp(int(timestamp)))   
     
     @property
     def dateformat(self): return self.__dateformat    
     def setformat(self, dateformat): self.__dateformat = dateformat
  
-    def __add__(self, other):
+    def __add__(self, other):  
         assert isinstance(other, Timedelta)
-        return self.frominstance(self.value + other.value)
+        return self.__class__(self.value + other.value)
     def __sub__(self, other):
         assert isinstance(other, Timedelta)
-        return self.frominstance(self.value - other.value)
+        return self.__class__(self.value - other.value)
     
     @classmethod
-    def fromnow(cls): return cls.frominstance(datetime.now())    
-    @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)        
-
+    def fromnow(cls): return cls(datetime.now())    
     @classmethod
     def fromstr(cls, datetimestr, **kwargs): 
         datefmt = kwargs.get('dateformat', DATETIMEFORMAT)
         if '.' in datefmt:
-            try: return cls.frominstance(datetime.strptime(datetimestr, datefmt), dateformat=datefmt)  
+            try: return cls(datetime.strptime(datetimestr, datefmt))  
             except ValueError: datefmt = datefmt.rpartition('.')[0]   
         while '-' in datefmt:
-            try: return cls.frominstance(datetime.strptime(datetimestr, datefmt), dateformat=datefmt)   
+            try: return cls(datetime.strptime(datetimestr, datefmt))   
             except ValueError: datefmt = datefmt.rpartition('-')[0]  
-        try: return cls.frominstance(datetime.strptime(datetimestr, datefmt), dateformat=datefmt)    
+        try: return cls(datetime.strptime(datetimestr, datefmt))    
         except: raise ValueError(datetimestr)   
     
 
@@ -85,15 +88,15 @@ class Datetime:
 class Date:
     fields = DATE    
     
-#    def __init__(self, *args, year=None, month=1, day=1, **kwargs): 
-#        instance = (args[0] if isinstance(args[0], date) else None) if args else None
-#        if instance is None: assert year is not None
-#        instance = date(int(year), int(month), int(day)) if not instance else instance
-#        self.setformat(kwargs.get('dateformat', DATEFORMAT))
-#        super().__init__(instance)    
-#    def checkvalue(self, value): 
-#        if not isinstance(value, date): raise ValueError(value)
-#    def fixvalue(self, value): return value
+    def __init__(self, value): 
+        super().__init__(value)
+        self.setformat(DATEFORMAT)
+    def checkvalue(self, value):
+        if not isinstance(value, date): raise ValueError(value)
+    def fixvalue(self, value):
+        if isinstance(value, np.datetime64): return datetime.utcfromtimestamp((value - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')).date() 
+        elif isinstance(value, dict): return date(int(value['year']), int(value.get('month', 1)), int(value.get('day', 1)))
+        else: return value
     
     def __str__(self): return self.strftime(self.dateformat)  
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
@@ -104,25 +107,18 @@ class Date:
     def dateformat(self): return self.__dateformat
     def setformat(self, dateformat): self.__dateformat = dateformat
     
-    def add(self, *args, years=0, months=0, days=0, **kwargs):
-        value = self.value + timedelta(days + (months/12) * 365 + years * 365)
-        return self.frominstance(value, *args, **kwargs) 
-    def sub(self, *args, years, months, days, **kwargs):
-        value = self.value - timedelta(days + (months/12) * 365 + years * 365)
-        return self.frominstance(value, *args, **kwargs) 
+    def add(self, *args, years=0, months=0, days=0, **kwargs): return self.__class__(self.value + timedelta(days + (months/12) * 365 + years * 365))
+    def sub(self, *args, years, months, days, **kwargs): return self.__class__(self.value - timedelta(days + (months/12) * 365 + years * 365))
     
     @classmethod
-    def fromnow(cls): return cls.frominstance(datetime.now())    
-    @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **{attr:getattr(instance, attr) for attr in cls.fields}, **kwargs)      
- 
+    def fromnow(cls): return cls(datetime.now())    
     @classmethod
     def fromstr(cls, datestr, **kwargs): 
         datefmt = kwargs.get('dateformat', DATEFORMAT)
         while '-' in datefmt:
-            try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)   
+            try: return cls(datetime.strptime(datestr, datefmt))   
             except ValueError: datefmt = datefmt.rpartition('-')[0]       
-        try: return cls.frominstance(datetime.strptime(datestr, datefmt), dateformat=datefmt)    
+        try: return cls(datetime.strptime(datestr, datefmt))    
         except: raise ValueError(datestr)  
     
     
@@ -142,14 +138,12 @@ def compile_seconds(seconds, key):
 class Timedelta:  
     fields = TIMEDELTA
     
-#    def __init__(self, *args, days=0, hours=0, minutes=0, seconds=0, **kwargs):
-#        instance = (args[0] if isinstance(args[0], timedelta) else None) if args else None
-#        instance = timedelta(days=int(days), hours=int(hours), minutes=int(minutes), seconds=int(seconds)) if not instance else instance
-#        self.setformat(kwargs.get('dateformat', TIMEDELTAFORMAT))
-#        super().__init__(instance)         
-#    def checkvalue(self, value): 
-#        if not isinstance(value, timedelta): raise ValueError(value)
-#    def fixvalue(self, value): return value
+    def checkvalue(self, value):
+        if not isinstance(value, date): raise ValueError(value)
+    def fixvalue(self, value):
+        if isinstance(value, np.timedelta64): return timedelta(seconds=value.item().total_seconds())
+        elif isinstance(value, dict): return timedelta(days=int(value.get('days', 0)), hours=int(value.get('hours', 0)), minutes=int(value.get('minutes', 0)), seconds=int(value.get('seconds', 0)))
+        else: return value
     
     def __str__(self): return TIMEDELTAFORMAT.format(**split_seconds(self.total_seconds())).lstrip()
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
@@ -158,27 +152,24 @@ class Timedelta:
    
     def __add__(self, other):
         assert isinstance(other, type(self))
-        return self.frominstance(self.value + other.value)
+        return self.__class__(self.value + other.value)
     def __sub__(self, other):
         assert isinstance(other, type(self))
-        return self.frominstance(self.value - other.value)
+        return self.__class__(self.value - other.value)
     
     def __mul__(self, factor):
         assert isinstance(factor, (int, float))
-        return self.frominstance(self.value * factor)
+        return self.__class__(self.value * factor)
     def __truediv__(self, factor): 
         assert isinstance(factor, (int, float))
-        return self.frominstance(self.value / factor)
+        return self.__class__(self.value / factor)
     
     def total(self, key): return compile_seconds(self.total_seconds(), key)
     
     @classmethod    
-    def fromseconds(cls, seconds, *args, **kwargs): return cls(*args, **split_seconds(seconds), **kwargs)
+    def fromseconds(cls, seconds): return cls({split_seconds(seconds)})
     @classmethod
-    def frominstance(cls, instance, *args, **kwargs): return cls(*args, **split_seconds(instance.total_seconds()), **kwargs)    
-
-    @classmethod
-    def fromstr(cls, timedeltastr, **kwargs): return cls(**parse(TIMEDELTAFORMAT, timedeltastr)   .named)  
+    def fromstr(cls, timedeltastr, **kwargs): return cls({**parse(TIMEDELTAFORMAT, timedeltastr).named})  
 
 
 

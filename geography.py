@@ -41,10 +41,12 @@ class Geography:
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
     def __geonum(self, key, value): return GEOLENGTHS[key] * ALLID if self.__geotype(value) == 'all' else str(value).zfill(GEOLENGTHS[key])
 
-#    def checkvalue(self, value): 
-#        if not isinstance(value, dict): raise ValueError(value)
-#    def fixvalue(self, value): return value
-#    def __init__(self, value): super().__init__(SODict([(str(key), value if value == ALLCHAR else self.__geonum(key, value)) for key, value in value.items()]))        
+    def __init__(self, value): super().__init__(SODict([(str(key), value if value == ALLCHAR else self.__geonum(key, value)) for key, value in value.items()]))        
+    def checkvalue(self, value):
+        if not isinstance(value, SODict): raise ValueError(value)
+    def fixvalue(self, value):
+        if isinstance(value, list): return SODict(value)
+        else: return value
     
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
@@ -103,10 +105,12 @@ class Geography:
 class Geopath: 
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
 
-#    def checkvalue(self, value): 
-#        if not isinstance(value, dict): raise ValueError(value)
-#    def fixvalue(self, value): return value 
-#    def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()]))    
+    def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()])) 
+    def checkvalue(self, value):
+        if not isinstance(value, SODict): raise ValueError(value)
+    def fixvalue(self, value):
+        if isinstance(value, list): return SODict(value)
+        else: return value   
     
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
@@ -145,10 +149,11 @@ class Geopath:
 class Address: 
     fields = ADDRESS
         
-#    def checkvalue(self, value): 
-#        if not isinstance(value, dict): raise ValueError(value)
-#    def fixvalue(self, value): return value 
-#    def __init__(self, **kwargs): super().__init__(AddressSgmts({field:kwargs[field] for field in self.fields})) 
+    def checkvalue(self, value): 
+        if not isinstance(value, AddressSgmts): raise ValueError(value)
+    def fixvalue(self, value):
+        if isinstance(value, dict): return AddressSgmts(AddressSgmts(*[value[field] for field in self.fields])) 
+        else: return value
 
     def __len__(self): return len(self.value)
     def __str__(self): return ADDRESSFORMAT.format(**self.todict())
