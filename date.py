@@ -29,22 +29,24 @@ TIMEDELTA = ('days', 'hours', 'minutes', 'seconds')
 TIMEDELTAFORMAT = '{days} {hours}:{minutes}:{seconds}'
 
 
-x = np.datetime64('2012')
-y = x.astype(datetime)
-print(y, type(y))
-
-
 @Variable.register('datetime')
 class Datetime:  
     fields = DATE   
 
     def __init__(self, value): 
-        super().__init__(value)
+        try: super().__init__(date(value.year, value.month, value.day, value.hour, value.minute, value.second))
+        except AttributeError: 
+            try: 
+                datesegments = [int(x) for x in str(value).split('T')[0].split('-')]
+                timesegments = [int(x) for x in str(value).split('T')[1].split('+')[0].split(':')]
+                super().__init__(date(*datesegments, **{key:value for key, value in zip(('hour', 'minute', 'second'), timesegments)}))
+            except: super().__init__(value)
         self.setformat(DATETIMEFORMAT)
+    
     def checkvalue(self, value):
         if not isinstance(value, datetime): raise ValueError(value)
     def fixvalue(self, value):
-        if isinstance(value, np.datetime64): return datetime.utcfromtimestamp((value - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's'))
+        if isinstance(value, date): return datetime(value.year, value.month, value.day)    
         elif isinstance(value, dict): return datetime(int(value['year']), int(value.get('month', 1)), int(value.get('day', 1)), hour=int(value.get('hour', 0)), minute=int(value.get('minute', 0)), second=int(value.get('second', 0)))
         else: return value
        
@@ -89,12 +91,16 @@ class Date:
     fields = DATE    
     
     def __init__(self, value): 
-        super().__init__(value)
+        try: super().__init__(date(value.year, value.month, value.day))
+        except AttributeError: 
+            try: super().__init__(date(*[int(x) for x in str(value).split('T')[0].split('-')]))
+            except: super().__init__(value)
         self.setformat(DATEFORMAT)
+
     def checkvalue(self, value):
         if not isinstance(value, date): raise ValueError(value)
     def fixvalue(self, value):
-        if isinstance(value, np.datetime64): return datetime.utcfromtimestamp((value - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')).date() 
+        if isinstance(value, datetime): return date(value.year, value.month, value.day)        
         elif isinstance(value, dict): return date(int(value['year']), int(value.get('month', 1)), int(value.get('day', 1)))
         else: return value
     
@@ -137,12 +143,17 @@ def compile_seconds(seconds, key):
 @Variable.register('timedelta')
 class Timedelta:  
     fields = TIMEDELTA
-    
+
+    def __init__(self, value): 
+        try: super().__init__(timedelta(seconds=value.total_seconds()))
+        except AttributeError: 
+            try: super().__init__(timedelta(seconds=value.item().total_seconds()))
+            except AttributeError: super().__init__(value)
+
     def checkvalue(self, value):
         if not isinstance(value, date): raise ValueError(value)
     def fixvalue(self, value):
-        if isinstance(value, np.timedelta64): return timedelta(seconds=value.item().total_seconds())
-        elif isinstance(value, dict): return timedelta(days=int(value.get('days', 0)), hours=int(value.get('hours', 0)), minutes=int(value.get('minutes', 0)), seconds=int(value.get('seconds', 0)))
+        if isinstance(value, dict): return timedelta(days=int(value.get('days', 0)), hours=int(value.get('hours', 0)), minutes=int(value.get('minutes', 0)), seconds=int(value.get('seconds', 0)))
         else: return value
     
     def __str__(self): return TIMEDELTAFORMAT.format(**split_seconds(self.total_seconds())).lstrip()
@@ -170,21 +181,6 @@ class Timedelta:
     def fromseconds(cls, seconds): return cls({split_seconds(seconds)})
     @classmethod
     def fromstr(cls, timedeltastr, **kwargs): return cls({**parse(TIMEDELTAFORMAT, timedeltastr).named})  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
