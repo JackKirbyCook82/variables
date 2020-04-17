@@ -68,6 +68,9 @@ class Variable(ABC):
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
     @property
     def value(self): return self.__value    
+    @property
+    def index(self): return self.value    
+    
     def __init__(self, value): 
         try: self.checkvalue(value)
         except ValueError: value = self.fixvalue(value)
@@ -80,13 +83,16 @@ class Variable(ABC):
     def __ne__(self, other): return not self.__eq__(other)
     
     @samevariable
-    def __lt__(self, other): return self.value < other.value
+    def __lt__(self, other): return self.index < other.index
     @samevariable
-    def __gt__(self, other): return self.value > other.value        
+    def __gt__(self, other): return self.index > other.index        
     @samevariable
-    def __le__(self, other): return self.value <= other.value
+    def __le__(self, other): return self.index <= other.index
     @samevariable
-    def __ge__(self, other): return self.value >= other.value
+    def __ge__(self, other): return self.index >= other.index
+
+    @classmethod
+    def fromindex(cls, index): return cls(index)
 
     @classmethod
     def register(cls, datatype):  

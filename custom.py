@@ -31,16 +31,22 @@ class Category:
         if not all([item in self.spec.categories for item in value]): raise ValueError(value)          
     def fixvalue(self, value): return value
     
+    @property
+    def index(self): return tuple([self.spec.index(item) for item in self.value])    
+    
     @samevariable
     def contains(self, other): return all([item in self.value for item in other.value])
     @samevariable
     def overlaps(self, other): return any([item in self.value for item in other.value])
-    
+       
     @samevariable
     def __contains__(self, other): return self.contains(other)
     def __hash__(self): return hash((self.__class__.__name__, *self.value,))
     def __iter__(self): 
         for item in self.value: yield item
+
+    @classmethod
+    def fromindex(cls, indexes): return cls(tuple([cls.spec.category(index) for index in _aslist(indexes)]))
 
     # OPERATIONS & TRANSFORMATIONS
     def expand(self, *args, how=None, **kwargs):
@@ -84,6 +90,8 @@ class Histogram:
     def indexvector(self): return np.array(list(self.spec.index))
     @property
     def weightvector(self): return np.array([self.value[category] for category in self.spec.categories])   
+    @property
+    def index(self): return {category:weight for category, weight in zip(self.categoryvector, self.weightvector)}
     
     def array(self): return np.array([np.full(weight, value) for value, weight in zip(np.nditer(self.indexvector, np.nditer(self.weightvector)))]).flatten()
     def sample(self): return np.random.choice(self.indexvector, 1, p=self.weightvector)  
@@ -106,6 +114,11 @@ class Histogram:
         indexfunction = lambda i: pow(x - i, 2) / pow(self.xmax() - self.xmin(), 2)
         weightfunction = lambda weight: weight / self.total()
         return np.sum(np.array([indexfunction(index) * weightfunction(weight) for index, weight in zip(self.indexvector, self.weightvector)]))
+
+    @classmethod
+    def fromindex(cls, indexes): 
+        assert isinstance(indexes, dict)       
+        return cls({cls.spec.category(index):int(weight) for index, weight in indexes.items()})
     
     # OPERATIONS & TRANSFORMATIONS
     def add(self, other, *args, **kwargs): 

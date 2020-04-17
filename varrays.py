@@ -101,25 +101,35 @@ def _average(varray, *args, weights=None, **kwargs):
 
 #GROUPING    
 @varray_dispatcher
-def groupby_bins(varray, *args, groups, **kwargs): pass
+def groupby_bins(varray, *args, values, **kwargs): pass
 
 @groupby_bins.register('num')
-def _groupby_bins_nums(varray, *args, groups, right=True, **kwargs):
+def _groupby_bins_nums(varray, *args, values, right=True, **kwargs):
     NumVariable = varray_type(varray)
     RangeVariable = NumVariable.unconsolidate(*args, how='group', **kwargs)
-    grpkeys = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]] 
+    grpkeys = [[None, values[0]], *[[values[index], values[index+1]] for index in range(len(values)-1)], [values[-1], None]] 
     grpkeys = [RangeVariable(grpkey) for grpkey in grpkeys]
     grpvalues = [[] for i in range(len(grpkeys))]
-    indexes = np.digitize([item.value for item in varray], groups, right=True)
+    indexes = np.digitize([item.value for item in varray], values, right=True)
     for index, item in zip(indexes, varray): grpvalues[index].append(item)
     groupings = {grpkey:grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
     return groupings
 
 @groupby_bins.register('range')
-def _groupby_bins_range(varray, *args, groups, **kwargs):
+def _groupby_bins_range(varray, *args, values, **kwargs):
     RangeVariable = varray_type(varray)
-    grpkeys = [[None, groups[0]], *[[groups[index], groups[index+1]] for index in range(len(groups)-1)], [groups[-1], None]]   
+    grpkeys = [[None, values[0]], *[[values[index], values[index+1]] for index in range(len(values)-1)], [values[-1], None]]   
     grpkeys = [RangeVariable(grpkey) for grpkey in grpkeys]
+    grpvalues = [[] for i in range(len(grpkeys))]
+    grpvalues = [[item for item in varray if grpkey.overlaps(item)] for grpkey in grpkeys]
+    assert len(_flatten(grpvalues)) == len(varray)
+    groupings = {grpkey:grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
+    return groupings 
+
+@groupby_bins.register('category')
+def _groupby_bins_category(varray, *args, values, **kwargs):
+    CategoryVariable = varray_type(varray)
+    grpkeys = [CategoryVariable.fromindex(value) for value in values]
     grpvalues = [[] for i in range(len(grpkeys))]
     grpvalues = [[item for item in varray if grpkey.overlaps(item)] for grpkey in grpkeys]
     assert len(_flatten(grpvalues)) == len(varray)
