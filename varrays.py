@@ -108,18 +108,18 @@ def _groupby_bins_nums(varray, *args, values, right=True, **kwargs):
     NumVariable = varray_type(varray)
     RangeVariable = NumVariable.unconsolidate(*args, how='group', **kwargs)
     grpkeys = [[None, values[0]], *[[values[index], values[index+1]] for index in range(len(values)-1)], [values[-1], None]] 
-    grpkeys = [RangeVariable(grpkey) for grpkey in grpkeys]
+    grpkeys = [RangeVariable(tuple(grpkey)) for grpkey in grpkeys]
     grpvalues = [[] for i in range(len(grpkeys))]
     indexes = np.digitize([item.value for item in varray], values, right=True)
     for index, item in zip(indexes, varray): grpvalues[index].append(item)
-    groupings = {grpkey:grpvalue for grpkey, grpvalue in zip(grpkeys, grpvalues)}
+    groupings = {tuple(grpkey):tuple(grpvalue) for grpkey, grpvalue in zip(grpkeys, grpvalues)}
     return groupings
 
 @groupby_bins.register('range')
 def _groupby_bins_range(varray, *args, values, **kwargs):
     RangeVariable = varray_type(varray)
     grpkeys = [[None, values[0]], *[[values[index], values[index+1]] for index in range(len(values)-1)], [values[-1], None]]   
-    grpkeys = [RangeVariable(grpkey) for grpkey in grpkeys]
+    grpkeys = [RangeVariable(tuple(grpkey)) for grpkey in grpkeys]
     grpvalues = [[] for i in range(len(grpkeys))]
     grpvalues = [[item for item in varray if grpkey.overlaps(item)] for grpkey in grpkeys]
     assert len(_flatten(grpvalues)) == len(varray)
