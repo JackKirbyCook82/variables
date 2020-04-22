@@ -16,7 +16,6 @@ __copyright__ = "Copyright 2018, Jack Kirby Cook"
 __license__ = ""
 
 
-_ALL = '*'
 VARIABLES = {}
 CUSTOM_VARIABLES = {}
 CUSTOM_VARIABLE_SUBCLASSES = {}
@@ -73,7 +72,6 @@ class Variable(ABC):
     def index(self): return self.value    
     
     def __init__(self, value): 
-        if value == _ALL: value = self.fromall()
         try: self.checkvalue(value)
         except ValueError: value = self.fixvalue(value)
         self.checkvalue(value)

@@ -7,6 +7,7 @@ Created on Thurs Jun 6 2019
 """
 
 from functools import reduce, update_wrapper
+from numbers import Number
 import numpy as np
 
 __version__ = "1.0.0"
@@ -25,8 +26,25 @@ class VariableMethodNotSupported(Exception):
 
 
 # FACTORY
-def varray_fromvalues(data, *args, variable, **kwargs): return [variable(value) for value in data]
-def varray_fromindex(data, *args, variable, **kwargs): return [variable.fromindex(value) for value in data]
+def varray_fromindex(data, *args, variable, **kwargs): 
+    assert isinstance(data, list)
+    return [variable.fromindex(value) for value in data]
+
+def varray_fromvalues(data, *args, variable, bounds=(None, None), **kwargs): 
+    assert isinstance(data, list)
+    if variable.datatype == 'num': 
+        if not all([isinstance(value, Number) for value in data]): raise ValueError(data)
+    elif variable.datatype == 'range': 
+        if all([isinstance(value, tuple) for value in data]): pass
+        elif all([isinstance(value, Number) for value in data]): 
+            data = [(bounds[0], data[0])] + [(i, j) for i, j in zip(data[:-1], data[1:])] + [(data[-1], bounds[-1])]
+        else: raise ValueError(data)
+    elif variable.datatype == 'category': 
+        if not all([isinstance(value, tuple) for value in data]): raise ValueError(data)
+    elif variable.datatype == 'histogram': 
+        if not all([isinstance(value, dict) for value in data]): raise ValueError(data)        
+    else: raise ValueError(variable.datatype)
+    return [variable(value) for value in data]
 
 
 # SUPPORT
