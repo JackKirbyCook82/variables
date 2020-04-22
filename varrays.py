@@ -25,8 +25,8 @@ class VariableMethodNotSupported(Exception):
 
 
 # FACTORY
-def varray_fromvalues(data, *args, variable, **kwargs): 
-    return [variable(value) for value in data]
+def varray_fromvalues(data, *args, variable, **kwargs): return [variable(value) for value in data]
+def varray_fromindex(data, *args, variable, **kwargs): return [variable.fromindex(value) for value in data]
 
 
 # SUPPORT
@@ -172,9 +172,9 @@ def _boundary(varray, *args, **kwargs): return [item.boundary(*args, **kwargs) f
 
 # EXPANSIONS
 @varray_dispatcher
-def expand(varray, *args, **kwargs): pass
-@expand.register('range', 'category')
-def _expand(varray, *args, **kwargs): return _flatten([item.expand(*args, **kwargs) for item in varray])
+def expansion(varray, *args, **kwargs): pass
+@expansion.register('range', 'category')
+def _expansion(varray, *args, **kwargs): return _flatten([item.expand(*args, **kwargs) for item in varray])
 
 
 # MOVING

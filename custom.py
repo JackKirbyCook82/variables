@@ -47,6 +47,8 @@ class Category:
 
     @classmethod
     def fromindex(cls, indexes): return cls(tuple([cls.spec.category(index) for index in _aslist(indexes)]))
+    @classmethod
+    def fromall(cls): return cls(cls.spec.categories)
 
     # OPERATIONS & TRANSFORMATIONS
     def expand(self, *args, how=None, **kwargs):
@@ -230,6 +232,9 @@ class Range:
     def __le__(self, other): return self == other or self < other
     @samevariable
     def __ge__(self, other): return self == other or self > other
+    
+    @classmethod
+    def fromall(cls): return cls((None, None))
     
     # OPERATIONS & TRANSFORMATIONS    
     def add(self, other, *args, **kwargs):
