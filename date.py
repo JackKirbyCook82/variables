@@ -8,7 +8,6 @@ Created on Sat Apr 7 2018
 
 from datetime import datetime, date, timedelta
 from parse import parse
-import numpy as np
 import math
 import time
 
@@ -61,6 +60,11 @@ class Datetime:
     def fromtimestamp(cls, timestamp): return cls(datetime.fromtimestamp(int(timestamp)))   
     
     @property
+    def index(self): return self.timestamp
+    @classmethod
+    def fromindex(cls, index): return cls.fromtimestamp(index)
+    
+    @property
     def dateformat(self): return self.__dateformat    
     def setformat(self, dateformat): self.__dateformat = dateformat
  
@@ -108,6 +112,16 @@ class Date:
     def __repr__(self): return '{}({})'.format(self.__class__.__name__,  ', '.join(['='.join([attr, str(getattr(self, attr))]) for attr in self.fields])) 
     def __getattr__(self, attr): return getattr(self.value, attr)  
     def __hash__(self): return hash(self.value)
+
+    @property
+    def timestamp(self): return int(time.mktime(self.timetuple()))     
+    @classmethod
+    def fromtimestamp(cls, timestamp): return cls(datetime.fromtimestamp(int(timestamp)))   
+    
+    @property
+    def index(self): return self.timestamp
+    @classmethod
+    def fromindex(cls, index): return cls.fromtimestamp(index)
     
     @property
     def dateformat(self): return self.__dateformat
