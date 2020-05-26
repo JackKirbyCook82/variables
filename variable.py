@@ -53,8 +53,8 @@ class Variable(ABC):
     def __repr__(self): pass    
     @abstractmethod
     def __str__(self): pass
-    @abstractmethod
-    def __hash__(self): pass
+#    @abstractmethod
+#    def __hash__(self): pass
     @abstractmethod
     def fromstr(self): pass
     @abstractmethod

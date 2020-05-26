@@ -41,7 +41,7 @@ class Category:
        
     @samevariable
     def __contains__(self, other): return self.contains(other)
-    def __hash__(self): return hash((self.__class__.__name__, *self.value,))
+#    def __hash__(self): return hash((self.__class__.__name__, *self.value,))
     def __iter__(self): 
         for item in self.value: yield item
 
@@ -84,7 +84,7 @@ class Histogram:
     
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
-    def __hash__(self): return hash((self.__class__.__name__, *self.value.values,))
+#    def __hash__(self): raise Exception('Histogram_Variable.__hash__()')
     
     @property
     def categoryvector(self): return list(self.spec.category)
@@ -133,7 +133,7 @@ class Histogram:
 
 @CustomVariable.register('num')
 class Num:  
-    def __hash__(self): return hash((self.__class__.__name__, self.value,))
+#    def __hash__(self): return hash((self.__class__.__name__, self.value,))
 
     def checkvalue(self, value): 
         if not isinstance(value, Number): raise ValueError(value)
@@ -169,7 +169,7 @@ class Num:
 
 @CustomVariable.register('range')
 class Range:  
-    def __hash__(self): return hash((self.__class__.__name__, self.value[0], self.value[-1],))
+#    def __hash__(self): return hash((self.__class__.__name__, self.value[0], self.value[-1],))
     
     def checkvalue(self, value): 
         if not isinstance(value, tuple): raise ValueError(value)

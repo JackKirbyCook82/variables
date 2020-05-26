@@ -51,7 +51,7 @@ class Geography:
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
-    def __hash__(self): return hash((self.__class__.__name__, self.geoID,))   
+#    def __hash__(self): return hash(self.geoID)   
     
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
@@ -114,8 +114,8 @@ class Geopath:
     
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))
-    def __hash__(self): return hash((self.__class__.__name__, tuple(self.keys), tuple(self.values),))  
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])) 
+#    def __hash__(self): raise Exception('Geopath.__hash__()')
     
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
@@ -158,7 +158,7 @@ class Address:
     def __len__(self): return len(self.value)
     def __str__(self): return ADDRESSFORMAT.format(**self.todict())
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items()]))
-    def __hash__(self): return hash((self.__class__.__name__, *self.value,))  
+#    def __hash__(self): raise Exception('Address.__hash__()')
     
     def keys(self): return list(self.value.todict().keys())
     def values(self): return list(self.value.todict().values())
