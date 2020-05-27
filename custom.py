@@ -11,7 +11,7 @@ from numbers import Number
 
 from utilities.dispatchers import keyword_singledispatcher as keydispatcher
 
-from variables.variable import CustomVariable, VariableOverlapError, samevariable
+from variables.variable import CustomVariable, VariableOverlapError
 
 __version__ = "1.0.0"
 __author__ = "Jack Kirby Cook"
@@ -25,23 +25,23 @@ _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else lis
 
 @CustomVariable.register('category')
 class Category: 
+    @property
+    def index(self): return tuple([self.spec.index(item) for item in self.value])      
+    
     def checkvalue(self, value): 
         if not isinstance(value, tuple): raise ValueError(value)
         if not all([isinstance(item, str) for item in value]): raise ValueError(value)
         if not all([item in self.spec.categories for item in value]): raise ValueError(value)          
     def fixvalue(self, value): return value
-    
-    @property
-    def index(self): return tuple([self.spec.index(item) for item in self.value])    
-    
-    @samevariable
-    def contains(self, other): return all([item in self.value for item in other.value])
-    @samevariable
-    def overlaps(self, other): return any([item in self.value for item in other.value])
+        
+    def contains(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))             
+        return all([item in self.value for item in other.value])
+    def overlaps(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))             
+        return any([item in self.value for item in other.value])
        
-    @samevariable
     def __contains__(self, other): return self.contains(other)
-#    def __hash__(self): return hash((self.__class__.__name__, *self.value,))
     def __iter__(self): 
         for item in self.value: yield item
 
@@ -84,7 +84,6 @@ class Histogram:
     
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
-#    def __hash__(self): raise Exception('Histogram_Variable.__hash__()')
     
     @property
     def categoryvector(self): return list(self.spec.category)
@@ -133,8 +132,6 @@ class Histogram:
 
 @CustomVariable.register('num')
 class Num:  
-#    def __hash__(self): return hash((self.__class__.__name__, self.value,))
-
     def checkvalue(self, value): 
         if not isinstance(value, Number): raise ValueError(value)
     def fixvalue(self, value):
@@ -169,8 +166,6 @@ class Num:
 
 @CustomVariable.register('range')
 class Range:  
-#    def __hash__(self): return hash((self.__class__.__name__, self.value[0], self.value[-1],))
-    
     def checkvalue(self, value): 
         if not isinstance(value, tuple): raise ValueError(value)
         if not len(value) == 2: raise ValueError(value)
@@ -190,6 +185,7 @@ class Range:
     def upper(self): return self.value[-1]
     
     def contains(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))     
         if isinstance(other, Num):
             try: left = other.value >= self.leftvalue
             except: left = self.leftvalue is None
@@ -203,35 +199,38 @@ class Range:
         else: raise TypeError(type(other))
         return left and right  
     
-    @samevariable
     def overlaps(self, other):
+        if self.spec != other.spec: raise TypeError(type(other))     
         try: left = not self.leftvalue >= other.rightvalue
         except TypeError: left = any([self.leftvalue is None, other.rightvalue is None])
         try: right = not self.rightvalue <= other.leftvalue
         except TypeError: right = any([self.rightvalue is None, other.leftvalue is None])
         return left and right
     
-    @samevariable
     def __lt__(self, other):
+        if self.spec != other.spec: raise TypeError(type(other))     
         try: left = self.leftvalue < other.leftvalue
         except TypeError: left = self.leftvalue is None and other.leftvalue is not None
         try: right = self.rightvalue < other.rightvalue
         except TypeError: right = self.rightvalue is not None and other.rightvalue is None
         return left and right        
-    @samevariable
+
     def __gt__(self, other):
+        if self.spec != other.spec: raise TypeError(type(other))     
         try: left = self.leftvalue > other.leftvalue
         except TypeError: left = self.leftvalue is not None and other.leftvalue is None
         try: right = self.rightvalue > other.rightvalue
         except TypeError: right = self.rightvalue is None and other.rightvalue is not None
         return left and right
   
-    @samevariable
+
     def __contains__(self, other): return self.contains(other)
-    @samevariable
-    def __le__(self, other): return self == other or self < other
-    @samevariable
-    def __ge__(self, other): return self == other or self > other
+    def __le__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))             
+        return self == other or self < other
+    def __ge__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))             
+        return self == other or self > other
     
     @classmethod
     def fromall(cls): return cls((None, None))

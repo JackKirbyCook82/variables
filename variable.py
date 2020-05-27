@@ -32,15 +32,6 @@ def create_customvariable(spec):
         CUSTOM_VARIABLE_SUBCLASSES[hash(spec)] = newvariable
         return newvariable  
 
-def samevariable(function):
-    def wrapper(self, other, *args, **kwargs):
-        try: 
-            if self.spec != other.spec: raise TypeError('{} != {}'.format(type(self), type(other)))    
-        except AttributeError: 
-            if type(self) != type(other): raise TypeError('{} != {}'.format(type(self), type(other)))    
-        return function(self, other, *args, **kwargs)
-    return wrapper
-
 
 class VariableNotCreatedError(Exception): pass     
 class VariableOverlapError(Exception):
@@ -49,50 +40,55 @@ class VariableOverlapError(Exception):
         
 
 class Variable(ABC):
-    @abstractmethod
-    def __repr__(self): pass    
-    @abstractmethod
-    def __str__(self): pass
-#    @abstractmethod
-#    def __hash__(self): pass
-    @abstractmethod
-    def fromstr(self): pass
+    def __init__(self, value): 
+        try: self.checkvalue(value)
+        except ValueError: value = self.fixvalue(value)
+        self.checkvalue(value)
+        self.__value = value   
+
     @abstractmethod
     def checkvalue(self, value): pass
     @abstractmethod
     def fixvalue(self, value): pass
 
     @classmethod
-    def jsonstr(cls): return json.dumps(dict(data=cls.datatype), sort_keys=True, indent=3, separators=(',', ' : '), default=str)   
-    @classmethod
     def name(cls): return '_'.join([cls.__name__, 'Variable'])
     @property
     def value(self): return self.__value    
     @property
-    def index(self): return self.value    
-    
-    def __init__(self, value): 
-        try: self.checkvalue(value)
-        except ValueError: value = self.fixvalue(value)
-        self.checkvalue(value)
-        self.__value = value   
-    
-    # EQUALITY
-    @samevariable
-    def __eq__(self, other): return self.value == other.value
+    def index(self): return self.__value    
+    @classmethod
+    def jsonstr(cls): return json.dumps(dict(data=cls.datatype), sort_keys=True, indent=3, separators=(',', ' : '), default=str)       
+        
+    @abstractmethod
+    def __repr__(self): pass    
+    @abstractmethod
+    def __str__(self): pass    
+
+    def __hash__(self): return hash((hash(self.__class__), self.index,))
     def __ne__(self, other): return not self.__eq__(other)
-    
-    @samevariable
-    def __lt__(self, other): return self.index < other.index
-    @samevariable
-    def __gt__(self, other): return self.index > other.index        
-    @samevariable
-    def __le__(self, other): return self.index <= other.index
-    @samevariable
-    def __ge__(self, other): return self.index >= other.index
+    def __eq__(self, other): 
+        if type(self) != type(other): raise TypeError(type(other))        
+        return self.index == other.index      
+    def __lt__(self, other): 
+        if type(self) != type(other): raise TypeError(type(other))   
+        return self.index < other.index
+    def __gt__(self, other): 
+        if type(self) != type(other): raise TypeError(type(other))   
+        return self.index > other.index        
+    def __le__(self, other): 
+        if type(self) != type(other): raise TypeError(type(other))   
+        return self.index <= other.index
+    def __ge__(self, other): 
+        if type(self) != type(other): raise TypeError(type(other))   
+        return self.index >= other.index
 
     @classmethod
     def fromindex(cls, index): return cls(index)
+    @classmethod
+    def fromvalue(cls, value): return cls(value)
+    @abstractmethod
+    def fromstr(self): pass        
     @classmethod
     def fromall(cls): raise NotImplementedError('{}.{}()'.format(cls.__name__, 'fromall'))
 
@@ -106,18 +102,38 @@ class Variable(ABC):
 
  
 class CustomVariable(Variable):
-    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value) 
-    def __str__(self): return self.spec.asstr(self.value)  
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
         if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
-        return super().__new__(cls)
-       
+        return super().__new__(cls)    
+    
+    def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value) 
+    def __str__(self): return self.spec.asstr(self.value)  
+ 
+    def __hash__(self): return hash((hash(self.spec), self.index,))
+    def __ne__(self, other): return not self.__eq__(other)
+    def __eq__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))        
+        return self.index == other.index      
+    def __lt__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))      
+        return self.index < other.index
+    def __gt__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))        
+        return self.index > other.index        
+    def __le__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))     
+        return self.index <= other.index
+    def __ge__(self, other): 
+        if self.spec != other.spec: raise TypeError(type(other))     
+        return self.index >= other.index
+      
+    @classmethod
+    def jsonstr(cls): return cls.spec.jsonstr()          
+
     @classmethod
     def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
-    @classmethod
-    def jsonstr(cls): return cls.spec.jsonstr()    
-    
+      
     @classmethod
     def register(cls, datatype):  
         def wrapper(subclass):
@@ -126,13 +142,11 @@ class CustomVariable(Variable):
             return newsubclass
         return wrapper  
     
-    # OPERATIONS
     @classmethod
     def operation(cls, other, *args, method, **kwargs): 
         try: return create_customvariable(getattr(cls.spec, method)(other.spec, *args, **kwargs))
         except AttributeError: return create_customvariable(cls.spec.operation(other.spec, *args, method=method, **kwargs))
 
-    # TRANSFORMATIONS
     @classmethod
     def transformation(cls, *args, method, how, **kwargs): 
         try: return create_customvariable(getattr(cls.spec, method)(*args, how=how, **kwargs))

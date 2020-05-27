@@ -51,7 +51,6 @@ class Geography:
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()]))    
-#    def __hash__(self): return hash(self.geoID)   
     
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
@@ -73,16 +72,6 @@ class Geography:
         elif isinstance(key, int): return self.__class__({self.getkey(key):self.getvalue(key)})
         elif isinstance(key, slice): return self.__class__(self.value[key])
         else: raise TypeError(type(key))
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__): raise TypeError(type(other))
-        return all([self.keys() == other.keys(), self.values() == other.values()])
-    def __ne__(self, other): return not self.__eq__(other)  
-
-    def __lt__(self, other): return self.geoID < other.geoID
-    def __le__(self, other): return self.geoID <= other.geoID
-    def __ge__(self, other): return self.geoID >= other.geoID
-    def __gt__(self, other): return self.geoID > other.geoID
 
     def __add__(self, other): return self.add(other)
     def add(self, other, *args, **kwargs):
@@ -115,8 +104,7 @@ class Geopath:
     def __len__(self): return len(self.value)
     def __str__(self): return DELIMITER.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.items()])) 
-#    def __hash__(self): raise Exception('Geopath.__hash__()')
-    
+
     def keys(self): return list(self.value.keys())
     def values(self): return list(self.value.values())
     def items(self): return zip(self.value.keys(), self.value.values())
@@ -134,11 +122,6 @@ class Geopath:
         elif isinstance(key, int): return self.__class__({self.getkey(key):self.getvalue(key)})
         elif isinstance(key, slice): return self.__class__(self.value[key])
         else: raise TypeError(type(key))
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__): raise TypeError(type(other))
-        return all([self.keys() == other.keys(), self.values() == other.values()])
-    def __ne__(self, other): return not self.__eq__(other)  
 
     @classmethod
     def fromstr(cls, geostr, **kwargs):
@@ -158,7 +141,6 @@ class Address:
     def __len__(self): return len(self.value)
     def __str__(self): return ADDRESSFORMAT.format(**self.todict())
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, ', '.join(['{key}={value}'.format(key=key, value=value) for key, value in self.todict().items()]))
-#    def __hash__(self): raise Exception('Address.__hash__()')
     
     def keys(self): return list(self.value.todict().keys())
     def values(self): return list(self.value.todict().values())
@@ -166,11 +148,6 @@ class Address:
     
     def __getitem__(self, key): return self.value.todict()[key]
     def __getattr__(self, attr): return getattr(self.value, attr)  
-
-    def __lt__(self, other): return str(self) < str(other)
-    def __le__(self, other): return str(self) <= str(other)
-    def __ge__(self, other): return str(self) >= str(other)
-    def __gt__(self, other): return str(self) > str(other)
         
     @classmethod
     def fromstr(cls, addressstr, **kwargs): 
