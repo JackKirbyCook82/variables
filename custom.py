@@ -25,6 +25,13 @@ _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else lis
 
 @CustomVariable.register('category')
 class Category: 
+    def __int__(self): 
+        if len(self.value) > 1: raise ValueError(self.value)
+        else: return int(self.index[0])
+    def __float__(self):
+        if len(self.value) > 1: raise ValueError(self.value)
+        else: return float(self.index[0])
+    
     @property
     def index(self): return tuple([self.spec.index(item) for item in self.value])      
     
@@ -132,6 +139,9 @@ class Histogram:
 
 @CustomVariable.register('num')
 class Num:  
+    def __int__(self): return int(self.value)
+    def __float__(self): return float(self.value)
+        
     def checkvalue(self, value): 
         if not isinstance(value, Number): raise ValueError(value)
     def fixvalue(self, value):
