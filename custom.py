@@ -39,7 +39,9 @@ class Category:
         if not isinstance(value, tuple): raise ValueError(value)
         if not all([isinstance(item, str) for item in value]): raise ValueError(value)
         if not all([item in self.spec.categories for item in value]): raise ValueError(value)          
-    def fixvalue(self, value): return value
+    def fixvalue(self, value): 
+        if isinstance(value, str): return (value,)
+        else: return value
         
     def contains(self, other): 
         if self.spec != other.spec: raise TypeError(type(other))             
@@ -51,6 +53,11 @@ class Category:
     def __contains__(self, other): return self.contains(other)
     def __iter__(self): 
         for item in self.value: yield item
+
+    @classmethod
+    def categories(cls): return cls.spec.categories
+    @classmethod
+    def indexes(cls): return cls.spec.indexes
 
     @classmethod
     def fromindex(cls, indexes): return cls(tuple([cls.spec.category(index) for index in _aslist(indexes)]))
@@ -87,7 +94,9 @@ class Histogram:
         if not isinstance(value, dict): raise ValueError(value)
         if not all([isinstance(key, str) for key in value.keys()]): raise ValueError(value)
         if not all([key in self.spec.categories and isinstance(weight, int) for key, weight in value]): raise ValueError(value)    
-    def fixvalue(self, value): return value
+    def fixvalue(self, value): 
+        if isinstance(value, str): return (value,)
+        else: return value
     
     def __getitem__(self, category): return self.value[category]
     def __len__(self): return len(self.categories)  
@@ -122,6 +131,11 @@ class Histogram:
         indexfunction = lambda i: pow(x - i, 2) / pow(self.xmax() - self.xmin(), 2)
         weightfunction = lambda weight: weight / self.total()
         return np.sum(np.array([indexfunction(index) * weightfunction(weight) for index, weight in zip(self.indexvector, self.weightvector)]))
+
+    @classmethod
+    def categories(cls): return cls.spec.categories
+    @classmethod
+    def indexes(cls): return cls.spec.indexes
 
     @classmethod
     def fromindex(cls, indexes): 
