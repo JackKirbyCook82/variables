@@ -65,6 +65,8 @@ class Geography:
     
     @property
     def geoID(self): return ''.join([self.__geonum(key, value) for key, value in zip(self.keys(), self.values())])
+    @property
+    def index(self): return self.geoID
 
     def get(self, key, default): return self.value.get(key, default)   
     def __getitem__(self, key):
