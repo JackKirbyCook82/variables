@@ -40,6 +40,11 @@ class VariableOverlapError(Exception):
         
 
 class Variable(ABC):
+    def __init_subclass__(cls, datatype, *args, **kwargs):
+        super().__init_subclass__(**kwargs)
+        setattr(cls, 'datatype', datatype.lower())
+        VARIABLES[datatype.lower()] = cls
+    
     def __init__(self, value): 
         try: self.checkvalue(value)
         except ValueError: value = self.fixvalue(value)
@@ -92,16 +97,13 @@ class Variable(ABC):
     @classmethod
     def fromall(cls): raise NotImplementedError('{}.{}()'.format(cls.__name__, 'fromall'))
 
-    @classmethod
-    def register(cls, datatype):  
-        def wrapper(subclass):
-            newsubclass = type(subclass.__name__, (subclass, cls), dict(datatype=datatype.lower()))
-            VARIABLES[datatype.lower()] = newsubclass
-            return newsubclass
-        return wrapper 
-
  
 class CustomVariable(Variable):
+    def __init_subclass__(cls, datatype, *args, **kwargs):
+        super().__init_subclass__(**kwargs)
+        setattr(cls, 'datatype', datatype.lower())
+        CUSTOM_VARIABLES[datatype.lower()] = cls
+    
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
         if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
@@ -130,23 +132,13 @@ class CustomVariable(Variable):
       
     @classmethod
     def jsonstr(cls): return cls.spec.jsonstr()          
-
     @classmethod
-    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))
-      
-    @classmethod
-    def register(cls, datatype):  
-        def wrapper(subclass):
-            newsubclass = type(subclass.__name__, (subclass, cls), dict(datatype=datatype.lower()))
-            CUSTOM_VARIABLES[datatype.lower()] = newsubclass
-            return newsubclass
-        return wrapper  
+    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))      
     
     @classmethod
     def operation(cls, other, *args, method, **kwargs): 
         try: return create_customvariable(getattr(cls.spec, method)(other.spec, *args, **kwargs))
         except AttributeError: return create_customvariable(cls.spec.operation(other.spec, *args, method=method, **kwargs))
-
     @classmethod
     def transformation(cls, *args, method, how, **kwargs): 
         try: return create_customvariable(getattr(cls.spec, method)(*args, how=how, **kwargs))

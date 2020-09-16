@@ -36,8 +36,7 @@ with open(os.path.join(_DIR, _GEOFILENAME), mode='r') as infile:
     GEOLENGTHS = {row[0]:int(row[1]) for row in reader}
 
 
-@Variable.register('geography')
-class Geography: 
+class Geography(Variable, 'geography'): 
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
     def __geonum(self, key, value): return GEOLENGTHS[key] * ALLID if self.__geotype(value) == 'all' else str(value).zfill(GEOLENGTHS[key])
 
@@ -92,8 +91,7 @@ class Geography:
         return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(DELIMITER)]))
 
 
-@Variable.register('geopath')
-class Geopath: 
+class Geopath(Variable, 'geopath'): 
     def __geotype(self, value): return 'all' if value == ALLCHAR else 'each'
 
     def __init__(self, value): super().__init__(SODict([(key, value) for key, value in value.items()])) 
@@ -130,8 +128,7 @@ class Geopath:
         return cls(SODict([tuple([*item.split('=')]) for item in geostr.split(DELIMITER)]))
 
 
-@Variable.register('address')
-class Address: 
+class Address(Variable, 'address'): 
     fields = ADDRESS
         
     def checkvalue(self, value): 
