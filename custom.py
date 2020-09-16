@@ -23,7 +23,7 @@ __license__ = ""
 _aslist = lambda items: [items] if not isinstance(items, (list, tuple)) else list(items)
 
 
-class Category(CustomVariable, 'category'): 
+class Category(CustomVariable, datatype='category'): 
     def __int__(self): 
         if len(self.value) > 1: raise ValueError(self.value)
         else: return int(self.index[0])
@@ -87,7 +87,7 @@ class Category(CustomVariable, 'category'):
         return self.operation(other.__class__, *args, method='couple', **kwargs)(value)   
 
 
-class Histogram(CustomVariable, 'histogram'):
+class Histogram(CustomVariable, datatype='histogram'):
     def checkvalue(self, value): 
         if not isinstance(value, dict): raise ValueError(value)
         if not all([isinstance(key, str) for key in value.keys()]): raise ValueError(value)
@@ -149,7 +149,7 @@ class Histogram(CustomVariable, 'histogram'):
         return self.operation(other.__class__, *args, method='subtract', **kwargs)(value) 
     
 
-class Num(CustomVariable, 'num'):  
+class Num(CustomVariable, datatype='num'):  
     def __int__(self): return int(self.value)
     def __float__(self): return float(self.value)
         
@@ -185,7 +185,7 @@ class Num(CustomVariable, 'num'):
         return self.transformation(*args, method='unconsolidate', how=how, direction=direction, **kwargs)(value)    
 
 
-class Range(CustomVariable, 'range'):  
+class Range(CustomVariable, datatype='range'):  
     def checkvalue(self, value): 
         if not isinstance(value, tuple): raise ValueError(value)
         if not len(value) == 2: raise ValueError(value)

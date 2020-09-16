@@ -40,8 +40,7 @@ class VariableOverlapError(Exception):
         
 
 class Variable(ABC):
-    def __init_subclass__(cls, datatype, *args, **kwargs):
-        super().__init_subclass__(**kwargs)
+    def __init_subclass__(cls, *args, datatype, **kwargs):
         setattr(cls, 'datatype', datatype.lower())
         VARIABLES[datatype.lower()] = cls
     
@@ -98,16 +97,35 @@ class Variable(ABC):
     def fromall(cls): raise NotImplementedError('{}.{}()'.format(cls.__name__, 'fromall'))
 
  
-class CustomVariable(Variable):
-    def __init_subclass__(cls, datatype, *args, **kwargs):
-        super().__init_subclass__(**kwargs)
+class CustomVariable(ABC):
+    def __init_subclass__(cls, *args, datatype, **kwargs):
         setattr(cls, 'datatype', datatype.lower())
         CUSTOM_VARIABLES[datatype.lower()] = cls
-    
+
     def __new__(cls, *args, **kwargs):
         if cls == CustomVariable: raise VariableNotCreatedError()
         if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
-        return super().__new__(cls)    
+        return super().__new__(cls)   
+
+    def __init__(self, value): 
+        try: self.checkvalue(value)
+        except ValueError: value = self.fixvalue(value)
+        self.checkvalue(value)
+        self.__value = value   
+
+    @abstractmethod
+    def checkvalue(self, value): pass
+    @abstractmethod
+    def fixvalue(self, value): pass
+    
+    @classmethod
+    def name(cls): return '_'.join([cls.__name__, 'Variable'])
+    @property
+    def value(self): return self.__value    
+    @property
+    def index(self): return self.__value    
+    @classmethod
+    def jsonstr(cls): return cls.spec.jsonstr()         
     
     def __repr__(self): return '{}({})'.format(self.__class__.__name__, self.value) 
     def __str__(self): return self.spec.asstr(self.value)  
@@ -129,11 +147,15 @@ class CustomVariable(Variable):
     def __ge__(self, other): 
         if self.spec != other.spec: raise TypeError(type(other))     
         return self.index >= other.index
-      
+          
     @classmethod
-    def jsonstr(cls): return cls.spec.jsonstr()          
+    def fromindex(cls, index): return cls(index)
     @classmethod
-    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))      
+    def fromvalue(cls, value): return cls(value)
+    @classmethod
+    def fromstr(cls, varstr): return cls(cls.spec.asval(varstr))          
+    @classmethod
+    def fromall(cls): raise NotImplementedError('{}.{}()'.format(cls.__name__, 'fromall'))
     
     @classmethod
     def operation(cls, other, *args, method, **kwargs): 

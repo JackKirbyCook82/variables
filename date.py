@@ -28,7 +28,7 @@ TIMEDELTA = ('days', 'hours', 'minutes', 'seconds')
 TIMEDELTAFORMAT = '{days} {hours}:{minutes}:{seconds}'
 
 
-class Datetime(Variable, 'datetime'):  
+class Datetime(Variable, datatype='datetime'):  
     fields = DATE   
 
     def __init__(self, value): 
@@ -88,7 +88,7 @@ class Datetime(Variable, 'datetime'):
         except: raise ValueError(datetimestr)   
     
 
-class Date(Variable, 'date'):
+class Date(Variable, datatype='date'):
     fields = DATE    
     
     def __init__(self, value): 
@@ -150,7 +150,7 @@ def compile_seconds(seconds, key):
     return conversions[key](seconds)
 
     
-class Timedelta(Variable, 'timedelta'):  
+class Timedelta(Variable, datatype='timedelta'):  
     fields = TIMEDELTA
 
     def __init__(self, value): 
