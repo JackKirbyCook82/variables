@@ -32,8 +32,7 @@ def create_customvariable(spec):
         CUSTOM_VARIABLE_SUBCLASSES[hash(spec)] = newvariable
         return newvariable  
 
-
-class VariableNotCreatedError(Exception): pass     
+  
 class VariableOverlapError(Exception):
     def __init__(self, instance, other, operation): 
         super().__init__('{}.{}({})'.format(repr(instance), operation, repr(other))) 
@@ -103,8 +102,7 @@ class CustomVariable(ABC):
         CUSTOM_VARIABLES[datatype.lower()] = cls
 
     def __new__(cls, *args, **kwargs):
-        if cls == CustomVariable: raise VariableNotCreatedError()
-        if not hasattr(cls, 'spec'): raise VariableNotCreatedError()
+        assert hasattr(cls, 'spec')
         return super().__new__(cls)   
 
     def __init__(self, value): 
