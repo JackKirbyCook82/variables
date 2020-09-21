@@ -60,7 +60,7 @@ class Geography(Variable, datatype='geography'):
     def getvalue(self, index): 
         if isinstance(index, int): return list(self.value.values())[index]  
         elif isinstance(index, str): return self.value[index]
-        else: raise TypeError(index)
+        else: raise TypeError(type(index).__name__)
     
     @property
     def geoID(self): return ''.join([self.__geonum(key, value) for key, value in zip(self.keys(), self.values())])
@@ -72,7 +72,7 @@ class Geography(Variable, datatype='geography'):
         if isinstance(key, str): return self.__class__({key:self.value[key]})
         elif isinstance(key, int): return self.__class__({self.getkey(key):self.getvalue(key)})
         elif isinstance(key, slice): return self.__class__(self.value[key])
-        else: raise TypeError(type(key))
+        else: raise TypeError(type(key).__name__)
 
     def __add__(self, other): return self.add(other)
     def add(self, other, *args, **kwargs):
@@ -114,14 +114,14 @@ class Geopath(Variable, datatype='geopath'):
     def getvalue(self, index): 
         if isinstance(index, int): return list(self.value.values())[index]  
         elif isinstance(index, str): return self.value[index]
-        else: raise TypeError(index) 
+        else: raise TypeError(type(index).__name__) 
 
     def get(self, key, default): return self.value.get(key, default)   
     def __getitem__(self, key):
         if isinstance(key, str): return self.__class__({key:self.value[key]})
         elif isinstance(key, int): return self.__class__({self.getkey(key):self.getvalue(key)})
         elif isinstance(key, slice): return self.__class__(self.value[key])
-        else: raise TypeError(type(key))
+        else: raise TypeError(type(key).__name__)
 
     @classmethod
     def fromstr(cls, geostr, **kwargs):

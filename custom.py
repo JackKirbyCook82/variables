@@ -43,10 +43,10 @@ class Category(CustomVariable, datatype='category'):
         else: return value
         
     def contains(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))             
+        if self.spec != other.spec: raise TypeError(type(other).__name__)             
         return all([item in self.value for item in other.value])
     def overlaps(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))             
+        if self.spec != other.spec: raise TypeError(type(other).__name__)             
         return any([item in self.value for item in other.value])
        
     def __contains__(self, other): return self.contains(other)
@@ -125,7 +125,7 @@ class Histogram(CustomVariable, datatype='histogram'):
         elif isinstance(x, str):
             if x in self.categories: x = self.categories.index(x) 
             else: raise ValueError(x)
-        else: raise TypeError(type(x))        
+        else: raise TypeError(type(x).__name__)        
         indexfunction = lambda i: pow(x - i, 2) / pow(self.xmax() - self.xmin(), 2)
         weightfunction = lambda weight: weight / self.total()
         return np.sum(np.array([indexfunction(index) * weightfunction(weight) for index, weight in zip(self.indexvector, self.weightvector)]))
@@ -205,7 +205,7 @@ class Range(CustomVariable, datatype='range'):
     def upper(self): return self.value[-1]
     
     def contains(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))     
+        if self.spec != other.spec: raise TypeError(type(other).__name__)     
         if isinstance(other, Num):
             try: left = other.value >= self.leftvalue
             except: left = self.leftvalue is None
@@ -220,7 +220,7 @@ class Range(CustomVariable, datatype='range'):
         return left and right  
     
     def overlaps(self, other):
-        if self.spec != other.spec: raise TypeError(type(other))     
+        if self.spec != other.spec: raise TypeError(type(other).__name__)     
         try: left = not self.leftvalue >= other.rightvalue
         except TypeError: left = any([self.leftvalue is None, other.rightvalue is None])
         try: right = not self.rightvalue <= other.leftvalue
@@ -228,7 +228,7 @@ class Range(CustomVariable, datatype='range'):
         return left and right
     
     def __lt__(self, other):
-        if self.spec != other.spec: raise TypeError(type(other))     
+        if self.spec != other.spec: raise TypeError(type(other).__name__)     
         try: left = self.leftvalue < other.leftvalue
         except TypeError: left = self.leftvalue is None and other.leftvalue is not None
         try: right = self.rightvalue < other.rightvalue
@@ -236,7 +236,7 @@ class Range(CustomVariable, datatype='range'):
         return left and right        
 
     def __gt__(self, other):
-        if self.spec != other.spec: raise TypeError(type(other))     
+        if self.spec != other.spec: raise TypeError(type(other).__name__)     
         try: left = self.leftvalue > other.leftvalue
         except TypeError: left = self.leftvalue is not None and other.leftvalue is None
         try: right = self.rightvalue > other.rightvalue
@@ -246,10 +246,10 @@ class Range(CustomVariable, datatype='range'):
 
     def __contains__(self, other): return self.contains(other)
     def __le__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))             
+        if self.spec != other.spec: raise TypeError(type(other).__name__)             
         return self == other or self < other
     def __ge__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))             
+        if self.spec != other.spec: raise TypeError(type(other).__name__)             
         return self == other or self > other
     
     @classmethod

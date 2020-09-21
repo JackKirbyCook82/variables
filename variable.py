@@ -71,19 +71,19 @@ class Variable(ABC):
     def __hash__(self): return hash((hash(self.__class__), self.index,))
     def __ne__(self, other): return not self.__eq__(other)
     def __eq__(self, other): 
-        if type(self) != type(other): raise TypeError(type(other))        
+        if type(self) != type(other): raise TypeError(type(other).__name__)        
         return self.index == other.index      
     def __lt__(self, other): 
-        if type(self) != type(other): raise TypeError(type(other))   
+        if type(self) != type(other): raise TypeError(type(other).__name__)   
         return self.index < other.index
     def __gt__(self, other): 
-        if type(self) != type(other): raise TypeError(type(other))   
+        if type(self) != type(other): raise TypeError(type(other).__name__)   
         return self.index > other.index        
     def __le__(self, other): 
-        if type(self) != type(other): raise TypeError(type(other))   
+        if type(self) != type(other): raise TypeError(type(other).__name__)   
         return self.index <= other.index
     def __ge__(self, other): 
-        if type(self) != type(other): raise TypeError(type(other))   
+        if type(self) != type(other): raise TypeError(type(other).__name__)   
         return self.index >= other.index
 
     @classmethod
@@ -131,19 +131,19 @@ class CustomVariable(ABC):
     def __hash__(self): return hash((hash(self.spec), self.index,))
     def __ne__(self, other): return not self.__eq__(other)
     def __eq__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))        
+        if self.spec != other.spec: raise TypeError(type(other).__name__)        
         return self.index == other.index      
     def __lt__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))      
+        if self.spec != other.spec: raise TypeError(type(other).__name__)      
         return self.index < other.index
     def __gt__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))        
+        if self.spec != other.spec: raise TypeError(type(other).__name__)        
         return self.index > other.index        
     def __le__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))     
+        if self.spec != other.spec: raise TypeError(type(other).__name__)     
         return self.index <= other.index
     def __ge__(self, other): 
-        if self.spec != other.spec: raise TypeError(type(other))     
+        if self.spec != other.spec: raise TypeError(type(other).__name__)     
         return self.index >= other.index
           
     @classmethod

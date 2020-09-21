@@ -33,7 +33,7 @@ class Variables(ODict):
     def __init__(self, items, name=None):
         if isinstance(items, list): pass
         elif isinstance(items, dict): items = [(key, value) for key, value in items.items()]
-        else: raise TypeError(items)    
+        else: raise TypeError(tuple([item.__name__ for item in items]))    
         assert all([isinstance(item, tuple) for item in items])
         assert all([len(item) == 2 for item in items])
         self.__name = name
